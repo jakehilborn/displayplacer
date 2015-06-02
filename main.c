@@ -11,8 +11,6 @@
 #include <unistd.h>
 #include "head.h"
 
-const int MAX_SCREENS = 32;
-
 int main(int argc, const char * argv[])
 {
     if (strcmp(argv[1], "--list") == 0)
@@ -25,7 +23,7 @@ int main(int argc, const char * argv[])
     
     for (int i = 0; i < argc - 1; i++)
     {
-        screenConfigs[i].modeNum = -1; //change modeNum from 0 to -1 in case user wants to set mode to 0 later
+        screenConfigs[i].modeNum = -1; //set modeNum from 0 to -1 in case user wants to set mode to 0 later
         
         char* propGroup = argv[i + 1];
         
@@ -40,12 +38,11 @@ int main(int argc, const char * argv[])
             {
                 case 'i': //id
                     propToken = strtok_r(NULL, ":", &propSavePtr);
-                    printf("case i=%s\n", propToken);
+
                     screenConfigs[i].id = atoi(propToken);
                     break;
                 case 'r': //res
                     propToken = strtok_r(NULL, ":", &propSavePtr);
-                    printf("case r=%s\n", propToken);
                     
                     char *resSavePtr = NULL;
                     char* resToken = strtok_r(propToken, "x", &resSavePtr);
@@ -59,8 +56,7 @@ int main(int argc, const char * argv[])
                     break;
                 case 's': //scaling
                     propToken = strtok_r(NULL, ":", &propSavePtr);
-                    printf("case s=%s\n", propToken);
-                    printf("strcmp(propToken, on=%i\n", strcmp(propToken, "on"));
+
                     if (strcmp(propToken, "on") == 0)
                         screenConfigs[i].scaled = true;
                     else
@@ -69,7 +65,6 @@ int main(int argc, const char * argv[])
                     break;
                 case 'o': //origin
                     propToken = strtok_r(NULL, ":", &propSavePtr);
-                    printf("case o=%s\n", propToken);
                     
                     char *originSavePtr = NULL;
                     char* originToken = strtok_r(propToken, ",", &originSavePtr);
@@ -80,12 +75,12 @@ int main(int argc, const char * argv[])
                     break;
                 case 'm': //mode
                     propToken = strtok_r(NULL, ":", &propSavePtr);
-                    printf("case m=%s\n", propToken);
+
                     screenConfigs[i].modeNum = atoi(propToken);
                     break;
                 case 'd': //rotation degree
                     propToken = strtok_r(NULL, ":", &propSavePtr);
-                    printf("case r=%s\n", propToken);
+
                     screenConfigs[i].degree = atoi(propToken);
                     break;
                 default:
@@ -111,19 +106,19 @@ int main(int argc, const char * argv[])
 
 void listScreens()
 {
-    CGDirectDisplayID screenList[32]; //use screenCount instead of hard code
     CGDisplayCount screenCount;
-    
-    CGGetActiveDisplayList(32, screenList, &screenCount); //max of 32 screens
+    CGGetActiveDisplayList(INT_MAX, NULL, &screenCount); //get number of active screens and store in screenCount
+
+    CGDirectDisplayID screenList[screenCount];
+    CGGetActiveDisplayList(INT_MAX, screenList, &screenCount);
     
     for (int i = 0; i < screenCount; i++)
     {
         UInt32 curScreen = screenList[i];
         
         printf("Screen ID: %i\n", curScreen);
-        printf("%lu x %lu\n", CGDisplayPixelsWide(curScreen), CGDisplayPixelsHigh(curScreen));
+        printf("%lux%lu\n", CGDisplayPixelsWide(curScreen), CGDisplayPixelsHigh(curScreen));
         printf("Rotation: %f\n", CGDisplayRotation(curScreen));
-        //printf("%f x %f\n", CGDisplayScreenSize(curScreen).width, CGDisplayScreenSize(curScreen).height);
         printf("Origin: (%f, %f)\n", CGDisplayBounds(curScreen).origin.x, CGDisplayBounds(curScreen).origin.y);
         
         int modeCount;
@@ -133,16 +128,16 @@ void listScreens()
         {
             modes_D4 mode = modes[i];
             
-            if(mode.derived.density == 1.0)
+            if(mode.derived.density == 1.0) //scaling off
             {
-                if(mode.derived.freq)
+                if(mode.derived.freq) //if screen supports different framerates
                     printf("mode %i: Res=%dx%dx%i\n", i, mode.derived.width, mode.derived.height, mode.derived.freq);
                 else
                     printf("mode %i: Res=%dx%d\n", i, mode.derived.width, mode.derived.height);
             }
-            else
+            else //scaling on
             {
-                if(mode.derived.freq)
+                if(mode.derived.freq) //if screen supports different framerates
                     printf("mode %i: Res=%dx%dx%i, scaled\n", i, mode.derived.width, mode.derived.height, mode.derived.freq);
                 else
                     printf("mode %i: Res=%dx%d, scaled\n", i, mode.derived.width, mode.derived.height);
@@ -154,7 +149,7 @@ void listScreens()
 
 int rotateScreen(CGDirectDisplayID screen, int degree)
 {
-    CGGetOnlineDisplayList(32, NULL, NULL); //helps prevent hanging from rotation change? Test this.
+    CGGetOnlineDisplayList(NULL, NULL, NULL); //helps prevent hanging from rotation change? Test this.
     io_service_t service = CGDisplayIOServicePort(screen);
     IOOptionBits options;
     
@@ -180,7 +175,7 @@ int rotateScreen(CGDirectDisplayID screen, int degree)
     
     while (CGDisplayRotation(screen) != degree)
     {
-        //spin until screen rotates
+        //wait until screen rotates
     }
     
     return 0;
@@ -202,9 +197,9 @@ int setResolution(CGDirectDisplayID screenId, int width, int height, bool scaled
     {
         modes_D4 mode = modes[i];
         
-        if (width && mode.derived.width != width)
+        if (mode.derived.width != width)
             continue;
-        if (height && mode.derived.height != height)
+        if (mode.derived.height != height)
             continue;
         if (scaled && mode.derived.density != 2.0)
             continue;
