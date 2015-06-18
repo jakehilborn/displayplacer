@@ -21,3 +21,5 @@ Instructions:
 Notes:
    1. The 'list' option shows resolutions for the screen's current orientation.
    2. The screen set to origin (0,0) will be set as the primary screen.
+
+Compile using "gcc -o displayplacer displayplacer.c -framework IOKit -framework ApplicationServices -Wno-deprecated-declarations"
