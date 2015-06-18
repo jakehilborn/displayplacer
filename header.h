@@ -60,6 +60,7 @@ void SetDisplayModeNum(CGDirectDisplayID display, int modeNum)
 	CGCompleteDisplayConfiguration(config, kCGConfigurePermanently);
 }
 
+void printHelp();
 void listScreens();
 int rotateScreen(CGDirectDisplayID, int degree);
 int setResolution(CGDirectDisplayID screenId, int width, int height, bool scaled, int hz, int modeNum);

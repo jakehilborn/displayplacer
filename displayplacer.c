@@ -1,19 +1,20 @@
-//
-//  main.m
-//  SetRes
-//
-//  Created by Jake on 5/16/15.
-//  Copyright (c) 2015 Jake. All rights reserved.
-//
+//  displayplacer.c
+//  Created by Jake Hilborn on 5/16/15.
 
 #include <IOKit/graphics/IOGraphicsLib.h>
 #include <ApplicationServices/ApplicationServices.h>
 #include <unistd.h>
-#include "head.h"
+#include "header.h"
 
 int main(int argc, const char * argv[])
 {
-    if (strcmp(argv[1], "--list") == 0)
+    if(argc == 1 || strcmp(argv[1], "--help") == 0)
+    {
+        printHelp();
+        return 0;
+    }
+
+    if (strcmp(argv[1], "list") == 0)
     {
         listScreens();
         return 0;
@@ -23,7 +24,7 @@ int main(int argc, const char * argv[])
     
     for (int i = 0; i < argc - 1; i++)
     {
-        screenConfigs[i].modeNum = -1; //set modeNum from 0 to -1 in case user wants to set mode to 0 later
+        screenConfigs[i].modeNum = -1; //set modeNum -1 in case user wants to set and use mode 0
         
         char* propGroup = argv[i + 1];
         
@@ -91,17 +92,42 @@ int main(int argc, const char * argv[])
             propSetToken = strtok_r(NULL, " \t", &propSetSavePtr);
         }
     }
-    
+
     for (int i = 0; i < argc - 1; i++)
     {
-        rotateScreen(screenConfigs[i].id, screenConfigs[i].degree);
+        CGGetOnlineDisplayList(INT_MAX, NULL, NULL); //must get list of displays before being able to do operations with a screenId
+        if (CGDisplayRotation(screenConfigs[i].id) != screenConfigs[i].degree)
+        {
+            rotateScreen(screenConfigs[i].id, screenConfigs[i].degree);
+        }
         setResolution(screenConfigs[i].id, screenConfigs[i].width, screenConfigs[i].height, screenConfigs[i].scaled, screenConfigs[i].hz, screenConfigs[i].modeNum);
     }
     
     setLayout(screenConfigs, sizeof(ScreenConfig) * (argc -1));
-    
+
     free(screenConfigs);
     return 0;
+}
+
+void printHelp()
+{
+    printf(
+            "Usage:\n"
+            "    Show current screen info and possible resolutions: displayplacer list\n"
+            "\n"
+            "    Set layout: displayplacer 'id:<screenId> res:<width>x<height>x<hz> scaling:<on/off> origin:(<x>,<y>) degree:<0/90/180/270>'\n"
+            "\n"
+            "    Set layout using mode: displayplacer 'id:<screenId> mode:<modeNum> origin:(<x>,<y>) degree:<0/90/180/270>'\n"
+            "\n"
+            "    example: displayplacer 'id:1124216227 res:3840x2160x60 scaling:off origin:(0,0) degree:0' 'id:69731906 res:1440x900 scaling:on origin:(-1440,1260) degree:0' 'id:1007295109 res:1920x1200 scaling:off origin:(960,-2160) degree:0'\n"
+            "\n"
+            "Instructions:\n"
+            "    1. Use displayplacer or the system settings to choose your screen resolutions and orientations.\n"
+            "    2. Use System Preferences -> Displays -> Arrangement to arrange the screens to your liking.\n"
+            "    3. Use 'displayplacer list' to get the info about your current layout so you can create profiles for scripting/hotkeys.\n"
+            "    Note: The 'list' option shows resolutions for the screen's current orientation.\n"
+            "          The screen set to origin (0,0) will be set as the primary screen.\n"
+    );
 }
 
 void listScreens()
@@ -117,9 +143,9 @@ void listScreens()
         UInt32 curScreen = screenList[i];
         
         printf("Screen ID: %i\n", curScreen);
-        printf("%lux%lu\n", CGDisplayPixelsWide(curScreen), CGDisplayPixelsHigh(curScreen));
-        printf("Rotation: %f\n", CGDisplayRotation(curScreen));
-        printf("Origin: (%f, %f)\n", CGDisplayBounds(curScreen).origin.x, CGDisplayBounds(curScreen).origin.y);
+        printf("Resolution: %lux%lu\n", CGDisplayPixelsWide(curScreen), CGDisplayPixelsHigh(curScreen));
+        printf("Rotation: %i\n", (int) CGDisplayRotation(curScreen));
+        printf("Origin: (%i, %i)\n", (int) CGDisplayBounds(curScreen).origin.x, (int) CGDisplayBounds(curScreen).origin.y);
         
         int modeCount;
         modes_D4* modes;
@@ -147,10 +173,10 @@ void listScreens()
     }
 }
 
-int rotateScreen(CGDirectDisplayID screen, int degree)
+int rotateScreen(CGDirectDisplayID screenId, int degree)
 {
-    CGGetOnlineDisplayList(NULL, NULL, NULL); //helps prevent hanging from rotation change? Test this.
-    io_service_t service = CGDisplayIOServicePort(screen);
+    CGGetOnlineDisplayList(NULL, NULL, NULL); //must get list of displays before being able to do operations with a screenId
+    io_service_t service = CGDisplayIOServicePort(screenId);
     IOOptionBits options;
     
     switch(degree)
@@ -168,15 +194,11 @@ int rotateScreen(CGDirectDisplayID screen, int degree)
             options = (0x00000400 | (kIOScaleRotate270)  << 16);
             break;
     }
-    
+
     int retVal = IOServiceRequestProbe(service, options);
+
     if (retVal != 0)
         fprintf(stderr, "error rotating display");
-    
-    while (CGDisplayRotation(screen) != degree)
-    {
-        //wait until screen rotates
-    }
     
     return 0;
 }
@@ -185,8 +207,9 @@ int setResolution(CGDirectDisplayID screenId, int width, int height, bool scaled
 {
     int modeCount;
     modes_D4* modes;
+
     CopyAllDisplayModes(screenId, &modes, &modeCount);
-    
+
     if (modeNum != -1)
     {
         SetDisplayModeNum(screenId, modeNum);
@@ -207,6 +230,7 @@ int setResolution(CGDirectDisplayID screenId, int width, int height, bool scaled
             continue;
         
         SetDisplayModeNum(screenId, i);
+        
         return 0;
     }
     
@@ -223,6 +247,6 @@ int setLayout(ScreenConfig screenConfigs[], size_t screenConfigsSize)
     {
         CGConfigureDisplayOrigin(config, screenConfigs[i].id, screenConfigs[i].x, screenConfigs[i].y);
     }
-    
+
     return CGCompleteDisplayConfiguration(config, kCGConfigurePermanently);
 }
