@@ -6,7 +6,7 @@
 #include <unistd.h>
 #include "header.h"
 
-int main(int argc, const char * argv[])
+int main(int argc, char * argv[])
 {
     if(argc == 1 || strcmp(argv[1], "--help") == 0)
     {
@@ -19,20 +19,20 @@ int main(int argc, const char * argv[])
         listScreens();
         return 0;
     }
-    
+
     ScreenConfig* screenConfigs = malloc((argc - 1) * sizeof(ScreenConfig));
     
     for (int i = 0; i < argc - 1; i++)
     {
         screenConfigs[i].modeNum = -1; //set modeNum -1 in case user wants to set and use mode 0
-        
+
         char* propGroup = argv[i + 1];
         
-        char *propSetSavePtr = NULL;
+        char* propSetSavePtr = NULL;
         char* propSetToken = strtok_r(propGroup, " \t", &propSetSavePtr);
         while (propSetToken)
         {
-            char *propSavePtr = NULL;
+            char* propSavePtr = NULL;
             char* propToken = strtok_r(propSetToken, ":", &propSavePtr);
                 
             switch (propToken[0])
@@ -45,7 +45,7 @@ int main(int argc, const char * argv[])
                 case 'r': //res
                     propToken = strtok_r(NULL, ":", &propSavePtr);
                     
-                    char *resSavePtr = NULL;
+                    char* resSavePtr = NULL;
                     char* resToken = strtok_r(propToken, "x", &resSavePtr);
                     screenConfigs[i].width = atoi(resToken);
                     resToken = strtok_r(NULL, "x", &resSavePtr);
@@ -67,7 +67,7 @@ int main(int argc, const char * argv[])
                 case 'o': //origin
                     propToken = strtok_r(NULL, ":", &propSavePtr);
                     
-                    char *originSavePtr = NULL;
+                    char* originSavePtr = NULL;
                     char* originToken = strtok_r(propToken, ",", &originSavePtr);
                     screenConfigs[i].x = atoi(originToken + 1); //skip the '(' character
                     originToken = strtok_r(NULL, ",", &originSavePtr);
@@ -85,7 +85,7 @@ int main(int argc, const char * argv[])
                     screenConfigs[i].degree = atoi(propToken);
                     break;
                 default:
-                    fprintf(stderr, "parsing error\n");
+                    fprintf(stderr, "Argument parsing error\n");
                     exit(1);
             }
             
@@ -93,17 +93,20 @@ int main(int argc, const char * argv[])
         }
     }
 
+    CGGetOnlineDisplayList(INT_MAX, NULL, NULL); //must get list of online displays before being able to do operations with a screenId
     for (int i = 0; i < argc - 1; i++)
     {
-        CGGetOnlineDisplayList(INT_MAX, NULL, NULL); //must get list of displays before being able to do operations with a screenId
         if (CGDisplayRotation(screenConfigs[i].id) != screenConfigs[i].degree)
         {
             rotateScreen(screenConfigs[i].id, screenConfigs[i].degree);
         }
         setResolution(screenConfigs[i].id, screenConfigs[i].width, screenConfigs[i].height, screenConfigs[i].scaled, screenConfigs[i].hz, screenConfigs[i].modeNum);
     }
-    
-    setLayout(screenConfigs, sizeof(ScreenConfig) * (argc -1));
+
+    if (argc > 2) //only set layout if more than one screen is being modified
+    {
+        setLayout(screenConfigs, sizeof(ScreenConfig) * (argc -1));
+    }
 
     free(screenConfigs);
     return 0;
@@ -150,32 +153,32 @@ void listScreens()
         int modeCount;
         modes_D4* modes;
         CopyAllDisplayModes(curScreen, &modes, &modeCount);
-        for(int i=0; i<modeCount; i++)
+
+        for(int i = 0; i < modeCount; i++)
         {
             modes_D4 mode = modes[i];
             
-            if(mode.derived.density == 1.0) //scaling off
-            {
-                if(mode.derived.freq) //if screen supports different framerates
-                    printf("mode %i: Res=%dx%dx%i\n", i, mode.derived.width, mode.derived.height, mode.derived.freq);
-                else
-                    printf("mode %i: Res=%dx%d\n", i, mode.derived.width, mode.derived.height);
-            }
-            else //scaling on
+            if(mode.derived.density == 2.0) //scaling on
             {
                 if(mode.derived.freq) //if screen supports different framerates
                     printf("mode %i: Res=%dx%dx%i, scaled\n", i, mode.derived.width, mode.derived.height, mode.derived.freq);
                 else
                     printf("mode %i: Res=%dx%d, scaled\n", i, mode.derived.width, mode.derived.height);
             }
+            else //scaling off
+            {
+                if(mode.derived.freq) //if screen supports different framerates
+                    printf("mode %i: Res=%dx%dx%i\n", i, mode.derived.width, mode.derived.height, mode.derived.freq);
+                else
+                    printf("mode %i: Res=%dx%d\n", i, mode.derived.width, mode.derived.height);
+            }
         }
         printf("\n");
     }
 }
 
-int rotateScreen(CGDirectDisplayID screenId, int degree)
+void rotateScreen(CGDirectDisplayID screenId, int degree)
 {
-    CGGetOnlineDisplayList(NULL, NULL, NULL); //must get list of displays before being able to do operations with a screenId
     io_service_t service = CGDisplayIOServicePort(screenId);
     IOOptionBits options;
     
@@ -198,24 +201,25 @@ int rotateScreen(CGDirectDisplayID screenId, int degree)
     int retVal = IOServiceRequestProbe(service, options);
 
     if (retVal != 0)
-        fprintf(stderr, "error rotating display");
+        fprintf(stderr, "Error rotating screen ID %i\n", screenId);
     
-    return 0;
+    return;
 }
 
-int setResolution(CGDirectDisplayID screenId, int width, int height, bool scaled, int hz, int modeNum)
+void setResolution(CGDirectDisplayID screenId, int width, int height, bool scaled, int hz, int modeNum)
 {
     int modeCount;
     modes_D4* modes;
 
-    CopyAllDisplayModes(screenId, &modes, &modeCount);
-
-    if (modeNum != -1)
+    if (modeNum != -1) //user specified modeNum instead of height/width/hz
     {
         SetDisplayModeNum(screenId, modeNum);
-        return 0;
+        return;
     }
-    
+
+    CopyAllDisplayModes(screenId, &modes, &modeCount);
+
+    //loop through all modes looking for one that matches user input resolution
     for (int i = 0; i < modeCount; i++)
     {
         modes_D4 mode = modes[i];
@@ -228,25 +232,46 @@ int setResolution(CGDirectDisplayID screenId, int width, int height, bool scaled
             continue;
         if (hz && mode.derived.freq != hz)
             continue;
-        
+
+        //matching resolution found
         SetDisplayModeNum(screenId, i);
-        
-        return 0;
+        return;
     }
-    
-    fprintf(stderr, "Could not find resolution %ix%i scaled=%i\n hz=%i\n", width, height, scaled, hz);
-    return 1;
+
+    //no matching resolution found
+    if(scaled)
+    {
+        if(hz) //if screen supports different framerates
+            fprintf(stderr, "Screen ID %i: could not find Res=%ix%ix%i, scaled\n", screenId, width, height, hz);
+        else
+            fprintf(stderr, "Screen ID %i: could not find Res=%ix%i, scaled\n", screenId, width, height);
+    }
+    else //scaling off
+    {
+        if(hz) //if screen supports different framerates
+            fprintf(stderr, "Screen ID %i: could not find Res=%ix%ix%i\n", screenId, width, height, hz);
+        else
+            fprintf(stderr, "Screen ID %i: could not find Res=%ix%i\n", screenId, width, height);
+    }
+
+    return;
 }
 
-int setLayout(ScreenConfig screenConfigs[], size_t screenConfigsSize)
+void setLayout(ScreenConfig screenConfigs[], size_t screenConfigsSize)
 {
     CGDisplayConfigRef config;
     CGBeginDisplayConfiguration(&config);
 
+    //Set the origin for each screen
     for (int i = 0; i < screenConfigsSize / sizeof(ScreenConfig); i++)
     {
         CGConfigureDisplayOrigin(config, screenConfigs[i].id, screenConfigs[i].x, screenConfigs[i].y);
     }
 
-    return CGCompleteDisplayConfiguration(config, kCGConfigurePermanently);
+    int retVal = CGCompleteDisplayConfiguration(config, kCGConfigurePermanently);
+
+    if (retVal != 0)
+        fprintf(stderr, "Error setting screen layout\n");
+
+    return;
 }
