@@ -1,4 +1,4 @@
-//Thanks to Phoenix Dev, creator of SwitchResX, for modes_D4 type for use in Apple's private core graphics APIs
+//Thanks to Phoenix Dev for modes_D4 type for use in Apple's private core graphics APIs
 typedef union
 {
     uint8_t rawData[0xDC];
