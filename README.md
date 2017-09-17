@@ -1,5 +1,5 @@
 # displayplacer
-OSX command line utility to configure multi-display resolutions and arrangements. Essentially XRandR for OSX.
+macOS command line utility to configure multi-display resolutions and arrangements. Essentially XRandR for macOS.
 
 <b>Download</b>: https://dl.dropboxusercontent.com/u/8561592/displayplacer
 
@@ -21,6 +21,5 @@ Instructions:
 Notes:
    1. The 'list' option shows resolutions for the screen's current orientation.
    2. The screen set to origin (0,0) will be set as the primary screen.
-   3. This has only been tested on OS X 10.10 Yosemite.
 
 Compile using "gcc -o displayplacer displayplacer.c -framework IOKit -framework ApplicationServices -Wno-deprecated-declarations"
