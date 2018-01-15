@@ -148,7 +148,7 @@ void listScreens()
         printf("Screen ID: %i\n", curScreen);
         printf("Resolution: %lux%lu\n", CGDisplayPixelsWide(curScreen), CGDisplayPixelsHigh(curScreen));
         printf("Rotation: %i\n", (int) CGDisplayRotation(curScreen));
-        printf("Origin: (%i, %i)\n", (int) CGDisplayBounds(curScreen).origin.x, (int) CGDisplayBounds(curScreen).origin.y);
+        printf("Origin: (%i,%i)\n", (int) CGDisplayBounds(curScreen).origin.x, (int) CGDisplayBounds(curScreen).origin.y);
         
         int modeCount;
         modes_D4* modes;
