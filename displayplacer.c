@@ -51,8 +51,11 @@ int main(int argc, char * argv[])
                     resToken = strtok_r(NULL, "x", &resSavePtr);
                     screenConfigs[i].height = atoi(resToken);
                     resToken = strtok_r(NULL, "x", &resSavePtr);
-                    if (resToken)
+                    if (resToken) {
                         screenConfigs[i].hz = atoi(resToken);
+                    } else {
+                        screenConfigs[i].hz = 0;
+                    }
                     
                     break;
                 case 's': //scaling
