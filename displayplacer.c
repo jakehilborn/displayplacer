@@ -91,20 +91,26 @@ int main(int argc, char * argv[]) {
         }
     }
 
+    bool isSuccess = true;
     CGGetOnlineDisplayList(INT_MAX, NULL, NULL); //must get list of online displays before being able to do operations with a screenId
     for (int i = 0; i < argc - 1; i++) {
         if (CGDisplayRotation(screenConfigs[i].id) != screenConfigs[i].degree) {
-            rotateScreen(screenConfigs[i].id, screenConfigs[i].degree);
+            isSuccess = rotateScreen(screenConfigs[i].id, screenConfigs[i].degree) && isSuccess;
         }
-        setResolution(screenConfigs[i].id, screenConfigs[i].width, screenConfigs[i].height, screenConfigs[i].scaled, screenConfigs[i].hz, screenConfigs[i].modeNum);
+        isSuccess = setResolution(screenConfigs[i].id, screenConfigs[i].width, screenConfigs[i].height, screenConfigs[i].scaled, screenConfigs[i].hz, screenConfigs[i].modeNum) && isSuccess;
     }
 
     if (argc > 2) { //only set layout if more than one screen is being modified
-        setLayout(screenConfigs, sizeof(ScreenConfig) * (argc -1));
+        isSuccess = setLayout(screenConfigs, sizeof(ScreenConfig) * (argc -1)) && isSuccess;
     }
 
     free(screenConfigs);
-    return 0;
+
+    if (isSuccess) {
+        return 0;
+    } else {
+        return 1;
+    }
 }
 
 void printHelp() {
@@ -168,7 +174,8 @@ void listScreens() {
     }
 }
 
-void rotateScreen(CGDirectDisplayID screenId, int degree) {
+bool rotateScreen(CGDirectDisplayID screenId, int degree) {
+    bool isSuccess = true;
     io_service_t service = CGDisplayIOServicePort(screenId);
     IOOptionBits options;
     
@@ -190,19 +197,20 @@ void rotateScreen(CGDirectDisplayID screenId, int degree) {
     int retVal = IOServiceRequestProbe(service, options);
 
     if (retVal != 0) {
+        isSuccess = false;
         fprintf(stderr, "Error rotating screen ID %i\n", screenId);
     }
     
-    return;
+    return isSuccess;
 }
 
-void setResolution(CGDirectDisplayID screenId, int width, int height, bool scaled, int hz, int modeNum) {
+bool setResolution(CGDirectDisplayID screenId, int width, int height, bool scaled, int hz, int modeNum) {
     int modeCount;
     modes_D4* modes;
 
     if (modeNum != -1) { //user specified modeNum instead of height/width/hz
         SetDisplayModeNum(screenId, modeNum);
-        return;
+        return true;
     }
 
     CopyAllDisplayModes(screenId, &modes, &modeCount);
@@ -226,7 +234,7 @@ void setResolution(CGDirectDisplayID screenId, int width, int height, bool scale
 
         //matching resolution found
         SetDisplayModeNum(screenId, i);
-        return;
+        return true;
     }
 
     //no matching resolution found
@@ -245,10 +253,11 @@ void setResolution(CGDirectDisplayID screenId, int width, int height, bool scale
         }
     }
 
-    return;
+    return false;
 }
 
-void setLayout(ScreenConfig screenConfigs[], size_t screenConfigsSize) {
+bool setLayout(ScreenConfig screenConfigs[], size_t screenConfigsSize) {
+    bool isSuccess = true;
     CGDisplayConfigRef config;
     CGBeginDisplayConfiguration(&config);
 
@@ -260,8 +269,9 @@ void setLayout(ScreenConfig screenConfigs[], size_t screenConfigsSize) {
     int retVal = CGCompleteDisplayConfiguration(config, kCGConfigurePermanently);
 
     if (retVal != 0) {
+        isSuccess = false;
         fprintf(stderr, "Error setting screen layout\n");
     }
 
-    return;
+    return isSuccess;
 }

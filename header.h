@@ -64,6 +64,6 @@ void SetDisplayModeNum(CGDirectDisplayID screenId, int modeNum)
 
 void printHelp();
 void listScreens();
-void rotateScreen(CGDirectDisplayID, int degree);
-void setResolution(CGDirectDisplayID screenId, int width, int height, bool scaled, int hz, int modeNum);
-void setLayout(ScreenConfig screenConfigs[], size_t screenConfigsSize);
+bool rotateScreen(CGDirectDisplayID, int degree);
+bool setResolution(CGDirectDisplayID screenId, int width, int height, bool scaled, int hz, int modeNum);
+bool setLayout(ScreenConfig screenConfigs[], size_t screenConfigsSize);
