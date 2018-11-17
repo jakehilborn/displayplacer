@@ -12,6 +12,11 @@ int main(int argc, char * argv[]) {
         return 0;
     }
 
+    if(strcmp(argv[1], "--version") == 0) {
+        printVersion();
+        return 0;
+    }
+
     if (strcmp(argv[1], "list") == 0) {
         listScreens();
         return 0;
@@ -130,6 +135,17 @@ void printHelp() {
             "    3. Use 'displayplacer list' to get the info about your current layout so you can create profiles for scripting/hotkeys.\n"
             "    Note: The 'list' option shows resolutions for the screen's current orientation.\n"
             "          The screen set to origin (0,0) will be set as the primary screen.\n"
+    );
+}
+
+void printVersion() {
+    printf(
+        "displayplacer v1.0.0\n"
+        "\n"
+        "Developer: Jake Hilborn\n"
+        "GitHub: https://github.com/jakehilborn/displayplacer\n"
+        "LinkedIn: https://www.linkedin.com/in/jakehilborn\n"
+        "Email: jakehilborn@gmail\n"
     );
 }
 
