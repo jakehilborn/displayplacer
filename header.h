@@ -19,15 +19,17 @@ typedef union
 
 typedef struct
 {
-    CGDirectDisplayID id; //screen identifier
-    int width;            //pixels wide
-    int height;           //pixels tall
-    int hz;               //refresh rate
-    bool scaled;          //scaling
-    int x;                //origin x position
-    int y;                //origin y position
-    int modeNum;          //display mode id
-    int degree;           //rotation degree
+    CGDirectDisplayID id;           //display identifier
+    CGDirectDisplayID mirrors[127]; //display IDs that mirror this display
+    int mirrorCount;                //number of displays that mirror this display
+    int width;                      //pixels wide
+    int height;                     //pixels tall
+    int hz;                         //refresh rate
+    bool scaled;                    //scaling
+    int x;                          //origin x position
+    int y;                          //origin y position
+    int modeNum;                    //display mode id
+    int degree;                     //rotation degree
 } ScreenConfig;
 
 //Apple's private core graphics APIs
@@ -54,17 +56,11 @@ void CopyAllDisplayModes(CGDirectDisplayID display, modes_D4** modes, int* cnt)
     }
 }
 
-void SetDisplayModeNum(CGDirectDisplayID screenId, int modeNum)
-{
-    CGDisplayConfigRef config;
-    CGBeginDisplayConfiguration(&config);
-    CGSConfigureDisplayMode(config, screenId, modeNum);
-    CGCompleteDisplayConfiguration(config, kCGConfigurePermanently);
-}
-
 void printHelp();
 void printVersion();
 void listScreens();
+bool validateScreenOnline(CGDirectDisplayID onlineDisplayList[], int screenCount, CGDirectDisplayID screenId);
 bool rotateScreen(CGDirectDisplayID, int degree);
-bool setResolution(CGDirectDisplayID screenId, int width, int height, bool scaled, int hz, int modeNum);
-bool setLayout(ScreenConfig screenConfigs[], size_t screenConfigsSize);
+bool configureMirror(CGDisplayConfigRef configRef, CGDirectDisplayID primaryScreenId, CGDirectDisplayID mirrorScreenId);
+bool configureResolution(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, int width, int height, bool scaled, int hz, int modeNum);
+bool configureOrigin(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, int x, int y);
