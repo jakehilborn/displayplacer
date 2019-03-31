@@ -226,15 +226,15 @@ void listScreens() {
 
         printf("Resolution: %lux%lu\n", CGDisplayPixelsWide(curScreen), CGDisplayPixelsHigh(curScreen));
 
-        printf("Rotation: %i", (int) CGDisplayRotation(curScreen));
-        if (CGDisplayIsBuiltin(curScreen)) {
-            printf(" - rotate internal screen example: `displayplacer 'id:%i degree:90'`", curScreen);
-        }
-        printf("\n");
-
         printf("Origin: (%i,%i)", (int) CGDisplayBounds(curScreen).origin.x, (int) CGDisplayBounds(curScreen).origin.y);
         if (CGDisplayIsMain(curScreen)) {
             printf(" - main display");
+        }
+        printf("\n");
+
+        printf("Rotation: %i", (int) CGDisplayRotation(curScreen));
+        if (CGDisplayIsBuiltin(curScreen)) {
+            printf(" - rotate internal screen example: `displayplacer 'id:%i degree:90'`", curScreen);
         }
         printf("\n");
         
@@ -242,9 +242,11 @@ void listScreens() {
         modes_D4* modes;
         CopyAllDisplayModes(curScreen, &modes, &modeCount);
 
+        printf("Resolutions for rotation %i:\n", (int) CGDisplayRotation(curScreen));
         for(int i = 0; i < modeCount; i++) {
             modes_D4 mode = modes[i];
             
+            printf("  ");
             if(mode.derived.density == 2.0) { //scaling on
                 if(mode.derived.freq) { //if screen supports different framerates
                     printf("mode %i: Res=%dx%dx%i, scaled\n", i, mode.derived.width, mode.derived.height, mode.derived.freq);
