@@ -17,21 +17,6 @@ typedef union
     } derived;
 } modes_D4;
 
-typedef struct
-{
-    CGDirectDisplayID id;           //display identifier
-    CGDirectDisplayID mirrors[127]; //display IDs that mirror this display
-    int mirrorCount;                //number of displays that mirror this display
-    int width;                      //pixels wide
-    int height;                     //pixels tall
-    int hz;                         //refresh rate
-    bool scaled;                    //scaling
-    int x;                          //origin x position
-    int y;                          //origin y position
-    int modeNum;                    //display mode id
-    int degree;                     //rotation degree
-} ScreenConfig;
-
 //Apple's private core graphics APIs
 void CGSGetNumberOfDisplayModes(CGDirectDisplayID display, int* nModes);
 void CGSGetDisplayModeDescriptionOfLength(CGDirectDisplayID display, int idx, modes_D4* mode, int length);
@@ -55,6 +40,21 @@ void CopyAllDisplayModes(CGDirectDisplayID display, modes_D4** modes, int* cnt)
         CGSGetDisplayModeDescriptionOfLength(display, i, &(*modes)[i], 0xD4);
     }
 }
+
+typedef struct
+{
+    CGDirectDisplayID id;           //display identifier
+    CGDirectDisplayID mirrors[127]; //display IDs that mirror this display
+    int mirrorCount;                //number of displays that mirror this display
+    int width;                      //pixels wide
+    int height;                     //pixels tall
+    int hz;                         //refresh rate
+    bool scaled;                    //scaling
+    int x;                          //origin x position
+    int y;                          //origin y position
+    int modeNum;                    //display mode id
+    int degree;                     //rotation degree
+} ScreenConfig;
 
 void printHelp();
 void printVersion();

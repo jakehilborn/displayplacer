@@ -4,6 +4,7 @@
 #include <IOKit/graphics/IOGraphicsLib.h>
 #include <ApplicationServices/ApplicationServices.h>
 #include <unistd.h>
+#include <math.h>
 #include "header.h"
 
 int main(int argc, char * argv[]) {
@@ -215,9 +216,25 @@ void listScreens() {
         UInt32 curScreen = screenList[i];
         
         printf("Screen ID: %i\n", curScreen);
+        if (CGDisplayIsBuiltin(curScreen)) {
+            printf("Type: MacBook built in screen\n");
+        } else {
+            CGSize size = CGDisplayScreenSize(curScreen);
+            int diagonal = round(sqrt((size.width * size.width) + (size.height * size.height)) / 25.4); //25.4mm in an inch
+            printf("Type: %i inch external screen\n", diagonal);
+        }
         printf("Resolution: %lux%lu\n", CGDisplayPixelsWide(curScreen), CGDisplayPixelsHigh(curScreen));
-        printf("Rotation: %i\n", (int) CGDisplayRotation(curScreen));
-        printf("Origin: (%i,%i)\n", (int) CGDisplayBounds(curScreen).origin.x, (int) CGDisplayBounds(curScreen).origin.y);
+        printf("Rotation: %i", (int) CGDisplayRotation(curScreen));
+        if (CGDisplayIsBuiltin(curScreen)) {
+            printf(" - rotate internal screen example: `displayplacer 'id:%i degree:90'`", curScreen);
+        }
+        printf("\n");
+
+        printf("Origin: (%i,%i)", (int) CGDisplayBounds(curScreen).origin.x, (int) CGDisplayBounds(curScreen).origin.y);
+        if (CGDisplayIsMain(curScreen)) {
+            printf(" - main display");
+        }
+        printf("\n");
         
         int modeCount;
         modes_D4* modes;
@@ -244,6 +261,8 @@ void listScreens() {
         printf("\n");
     }
 }
+
+
 
 bool validateScreenOnline(CGDirectDisplayID onlineDisplayList[], int screenCount, CGDirectDisplayID screenId) {
     for (int i = 0; i < screenCount; i++) {
