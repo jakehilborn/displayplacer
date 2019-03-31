@@ -223,7 +223,9 @@ void listScreens() {
             int diagonal = round(sqrt((size.width * size.width) + (size.height * size.height)) / 25.4); //25.4mm in an inch
             printf("Type: %i inch external screen\n", diagonal);
         }
+
         printf("Resolution: %lux%lu\n", CGDisplayPixelsWide(curScreen), CGDisplayPixelsHigh(curScreen));
+
         printf("Rotation: %i", (int) CGDisplayRotation(curScreen));
         if (CGDisplayIsBuiltin(curScreen)) {
             printf(" - rotate internal screen example: `displayplacer 'id:%i degree:90'`", curScreen);
