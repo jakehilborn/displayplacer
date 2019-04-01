@@ -283,24 +283,57 @@ void printCurrentProfile() {
     CGDirectDisplayID screenList[screenCount];
     CGGetOnlineDisplayList(INT_MAX, screenList, &screenCount);
 
+    ScreenConfig screenConfigs[screenCount];
+    for (int i = 0; i < screenCount; i++) {
+        screenConfigs[i].id = screenList[i];
+    }
+
+    for (int i = 0; i < screenCount; i++) {
+        if (CGDisplayIsInMirrorSet(screenConfigs[i].id) && CGDisplayMirrorsDisplay(screenConfigs[i].id) != 0) { //this screen is a secondary screen in a mirroring set
+            int primaryScreenId = CGDisplayMirrorsDisplay(screenConfigs[i].id);
+            int secondaryScreenId = screenConfigs[i].id;
+
+            for (int j = 0; j < screenCount; j++) {
+                if (screenConfigs[j].id == primaryScreenId) {
+                    screenConfigs[j].mirrors[screenConfigs[j].mirrorCount] = secondaryScreenId;
+                    screenConfigs[j].mirrorCount++;
+                }
+            }
+
+            screenConfigs[i].id = -1;
+        }
+    }
+
     printf("displayplacer");
     for (int i = 0; i < screenCount; i++) {
-        CGDirectDisplayID curScreen = screenList[i];
+        ScreenConfig curScreen = screenConfigs[i];
+
+        if (curScreen.id == -1) { //earlier we set this to -1 since it will be represented as a mirror on output
+            continue;
+        }
 
         int curModeId;
-        CGSGetCurrentDisplayMode(curScreen, &curModeId);
+        CGSGetCurrentDisplayMode(curScreen.id, &curModeId);
         modes_D4 curMode;
-        CGSGetDisplayModeDescriptionOfLength(curScreen, curModeId, &curMode, 0xD4);
+        CGSGetDisplayModeDescriptionOfLength(curScreen.id, curModeId, &curMode, 0xD4);
 
         char hz[5];
-        strncpy(hz, "", sizeof(hz)); //most displays do not have hz option
+        strlcpy(hz, "", sizeof(hz)); //most displays do not have hz option
         if (curMode.derived.freq) {
             snprintf(hz, sizeof(hz), "x%i", curMode.derived.freq);
         }
 
-        char * scaling = (curMode.derived.density == 2.0) ? "on" : "off";
+        char* scaling = (curMode.derived.density == 2.0) ? "on" : "off";
 
-        printf(" 'id:%i res:%ix%i%s scaling:%s origin:(%i,%i) degree:%i'", curScreen, (int) CGDisplayPixelsWide(curScreen), (int) CGDisplayPixelsHigh(curScreen), hz, scaling, (int) CGDisplayBounds(curScreen).origin.x, (int) CGDisplayBounds(curScreen).origin.y, (int) CGDisplayRotation(curScreen));
+        char mirrors[1400]; //large enough to hold 127 mirrors with IDs that are 10 char (max uint32 size)
+        strlcpy(mirrors, "", sizeof(mirrors));
+        char mirrorStrFormat[12];
+        for (int j = 0; j < curScreen.mirrorCount; j++) {
+            snprintf(mirrorStrFormat, sizeof(mirrorStrFormat), "+%i", curScreen.mirrors[j]);
+            strlcat(mirrors, mirrorStrFormat, sizeof(mirrors));
+        }
+
+        printf(" 'id:%i%s res:%ix%i%s scaling:%s origin:(%i,%i) degree:%i'", curScreen.id, mirrors, (int) CGDisplayPixelsWide(curScreen.id), (int) CGDisplayPixelsHigh(curScreen.id), hz, scaling, (int) CGDisplayBounds(curScreen.id).origin.x, (int) CGDisplayBounds(curScreen.id).origin.y, (int) CGDisplayRotation(curScreen.id));
     }
     printf("\n");
 }
