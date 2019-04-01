@@ -286,6 +286,7 @@ void printCurrentProfile() {
     ScreenConfig screenConfigs[screenCount];
     for (int i = 0; i < screenCount; i++) {
         screenConfigs[i].id = screenList[i];
+        screenConfigs[i].mirrorCount = 0;
     }
 
     for (int i = 0; i < screenCount; i++) {
