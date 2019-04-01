@@ -18,6 +18,7 @@ typedef union
 } modes_D4;
 
 //Apple's private core graphics APIs
+void CGSGetCurrentDisplayMode(CGDirectDisplayID display, int* modeNum);
 void CGSGetNumberOfDisplayModes(CGDirectDisplayID display, int* nModes);
 void CGSGetDisplayModeDescriptionOfLength(CGDirectDisplayID display, int idx, modes_D4* mode, int length);
 void CGSConfigureDisplayMode(CGDisplayConfigRef config, CGDirectDisplayID display, int modeNum);
@@ -59,6 +60,7 @@ typedef struct
 void printHelp();
 void printVersion();
 void listScreens();
+void printCurrentProfile();
 bool validateScreenOnline(CGDirectDisplayID onlineDisplayList[], int screenCount, CGDirectDisplayID screenId);
 bool rotateScreen(CGDirectDisplayID, int degree);
 bool configureMirror(CGDisplayConfigRef configRef, CGDirectDisplayID primaryScreenId, CGDirectDisplayID mirrorScreenId);

@@ -5,9 +5,10 @@
 #include <ApplicationServices/ApplicationServices.h>
 #include <unistd.h>
 #include <math.h>
+#include <stdio.h>
 #include "header.h"
 
-int main(int argc, char * argv[]) {
+int main(int argc, char* argv[]) {
     if(argc == 1 || strcmp(argv[1], "--help") == 0) {
         printHelp();
         return 0;
@@ -20,6 +21,7 @@ int main(int argc, char * argv[]) {
 
     if (strcmp(argv[1], "list") == 0) {
         listScreens();
+        printCurrentProfile();
         return 0;
     }
 
@@ -213,7 +215,7 @@ void listScreens() {
     CGGetOnlineDisplayList(INT_MAX, screenList, &screenCount);
 
     for (int i = 0; i < screenCount; i++) {
-        UInt32 curScreen = screenList[i];
+        CGDirectDisplayID curScreen = screenList[i];
         
         printf("Screen ID: %i\n", curScreen);
         if (CGDisplayIsBuiltin(curScreen)) {
@@ -224,7 +226,7 @@ void listScreens() {
             printf("Type: %i inch external screen\n", diagonal);
         }
 
-        printf("Resolution: %lux%lu\n", CGDisplayPixelsWide(curScreen), CGDisplayPixelsHigh(curScreen));
+        printf("Resolution: %ix%i\n", (int) CGDisplayPixelsWide(curScreen), (int) CGDisplayPixelsHigh(curScreen));
 
         printf("Origin: (%i,%i)", (int) CGDisplayBounds(curScreen).origin.x, (int) CGDisplayBounds(curScreen).origin.y);
         if (CGDisplayIsMain(curScreen)) {
@@ -234,13 +236,16 @@ void listScreens() {
 
         printf("Rotation: %i", (int) CGDisplayRotation(curScreen));
         if (CGDisplayIsBuiltin(curScreen)) {
-            printf(" - rotate internal screen example: `displayplacer 'id:%i degree:90'`", curScreen);
+            printf(" - rotate internal screen example (may crash computer, but will be rotated after rebooting): `displayplacer 'id:%i degree:90'`", curScreen);
         }
         printf("\n");
         
         int modeCount;
         modes_D4* modes;
         CopyAllDisplayModes(curScreen, &modes, &modeCount);
+
+        int curModeId;
+        CGSGetCurrentDisplayMode(curScreen, &curModeId);
 
         printf("Resolutions for rotation %i:\n", (int) CGDisplayRotation(curScreen));
         for(int i = 0; i < modeCount; i++) {
@@ -249,24 +254,56 @@ void listScreens() {
             printf("  ");
             if(mode.derived.density == 2.0) { //scaling on
                 if(mode.derived.freq) { //if screen supports different framerates
-                    printf("mode %i: Res=%dx%dx%i, scaled\n", i, mode.derived.width, mode.derived.height, mode.derived.freq);
+                    printf("mode %i: res=%dx%dx%i, scaled", i, mode.derived.width, mode.derived.height, mode.derived.freq);
                 } else {
-                    printf("mode %i: Res=%dx%d, scaled\n", i, mode.derived.width, mode.derived.height);
+                    printf("mode %i: res=%dx%d, scaled", i, mode.derived.width, mode.derived.height);
                 }
             }
             else { //scaling off
                 if(mode.derived.freq) { //if screen supports different framerates
-                    printf("mode %i: Res=%dx%dx%i\n", i, mode.derived.width, mode.derived.height, mode.derived.freq);
+                    printf("mode %i: res=%dx%dx%i", i, mode.derived.width, mode.derived.height, mode.derived.freq);
                 } else {
-                    printf("mode %i: Res=%dx%d\n", i, mode.derived.width, mode.derived.height);
+                    printf("mode %i: res=%dx%d", i, mode.derived.width, mode.derived.height);
                 }
             }
+
+            if (i == curModeId) {
+                printf(" <-- current mode");
+            }
+            printf("\n");
         }
         printf("\n");
     }
 }
 
+void printCurrentProfile() {
+    CGDisplayCount screenCount;
+    CGGetOnlineDisplayList(INT_MAX, NULL, &screenCount); //get number of online screens and store in screenCount
 
+    CGDirectDisplayID screenList[screenCount];
+    CGGetOnlineDisplayList(INT_MAX, screenList, &screenCount);
+
+    printf("displayplacer");
+    for (int i = 0; i < screenCount; i++) {
+        CGDirectDisplayID curScreen = screenList[i];
+
+        int curModeId;
+        CGSGetCurrentDisplayMode(curScreen, &curModeId);
+        modes_D4 curMode;
+        CGSGetDisplayModeDescriptionOfLength(curScreen, curModeId, &curMode, 0xD4);
+
+        char hz[5];
+        strncpy(hz, "", sizeof(hz)); //most displays do not have hz option
+        if (curMode.derived.freq) {
+            snprintf(hz, sizeof(hz), "x%i", curMode.derived.freq);
+        }
+
+        char * scaling = (curMode.derived.density == 2.0) ? "on" : "off";
+
+        printf(" 'id:%i res:%ix%i%s scaling:%s origin:(%i,%i) degree:%i'", curScreen, (int) CGDisplayPixelsWide(curScreen), (int) CGDisplayPixelsHigh(curScreen), hz, scaling, (int) CGDisplayBounds(curScreen).origin.x, (int) CGDisplayBounds(curScreen).origin.y, (int) CGDisplayRotation(curScreen));
+    }
+    printf("\n");
+}
 
 bool validateScreenOnline(CGDirectDisplayID onlineDisplayList[], int screenCount, CGDirectDisplayID screenId) {
     for (int i = 0; i < screenCount; i++) {
@@ -355,16 +392,16 @@ bool configureResolution(CGDisplayConfigRef configRef, CGDirectDisplayID screenI
     //no matching resolution found
     if(scaled) {
         if(hz) { //if screen supports different framerates
-            fprintf(stderr, "Screen ID %i: could not find Res=%ix%ix%i, scaled\n", screenId, width, height, hz);
+            fprintf(stderr, "Screen ID %i: could not find res=%ix%ix%i, scaled\n", screenId, width, height, hz);
         } else {
-            fprintf(stderr, "Screen ID %i: could not find Res=%ix%i, scaled\n", screenId, width, height);
+            fprintf(stderr, "Screen ID %i: could not find res=%ix%i, scaled\n", screenId, width, height);
         }
     }
     else { //scaling off
         if(hz) { //if screen supports different framerates
-            fprintf(stderr, "Screen ID %i: could not find Res=%ix%ix%i\n", screenId, width, height, hz);
+            fprintf(stderr, "Screen ID %i: could not find res=%ix%ix%i\n", screenId, width, height, hz);
         } else {
-            fprintf(stderr, "Screen ID %i: could not find Res=%ix%i\n", screenId, width, height);
+            fprintf(stderr, "Screen ID %i: could not find res=%ix%i\n", screenId, width, height);
         }
     }
 
