@@ -198,7 +198,7 @@ void printHelp() {
 
 void printVersion() {
     printf(
-        "displayplacer v1.1.0-dev\n"
+        "displayplacer v1.1.0\n"
         "\n"
         "Developer: Jake Hilborn\n"
         "GitHub: https://github.com/jakehilborn/displayplacer\n"
