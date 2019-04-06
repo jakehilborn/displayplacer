@@ -183,8 +183,8 @@ void printHelp() {
             "        - Choose desired resolutions (use displayplacer for extra resolutions).\n"
             "        - Drag the white bar to your desired primary screen.\n"
             "        - Arrange screens as desired and/or enable mirroring.\n"
-            "        - To enable partial mirroring hold the option key and drag a display on top of another.\n"
-            "    2. Use `displayplacer list` to get the info about your current layout so you can create profiles for scripting/hotkeys.\n"
+            "        - To enable partial mirroring hold the alt/option key and drag a display on top of another.\n"
+            "    2. Use `displayplacer list` to print your current layout's args so you can create profiles for scripting/hotkeys with Automator, BetterTouchTool, etc.\n"
             "\n"
             "Notes:\n"
             "    - *`displayplacer list` and system prefs only show resolutions for the screen's current rotation.\n"
@@ -192,7 +192,7 @@ void printHelp() {
             "    - Use an extra resolution shown in `displayplacer list` by executing `displayplacer 'id:<screenId> mode:<modeNum>'`\n"
             "    - Rotate your internal MacBook screen by executing `displayplacer 'id:<screenId> degree:<0/90/180/270>'`\n"
             "    - The screen set to origin (0,0) will be set as the primary screen (white bar in system prefs).\n"
-            "    - The first screenId in a mirroring set will be the 'Optimize for' screen in the system prefs. You can only choose resolutions for the 'Optimize for' screen. If there is a mirroring resolution you need but cannot find, try making a different screenId to first of the set.\n"
+            "    - The first screenId in a mirroring set will be the 'Optimize for' screen in the system prefs. You can only choose resolutions for the 'Optimize for' screen. If there is a mirroring resolution you need but cannot find, try making a different screenId the first of the set.\n"
     );
 }
 
@@ -305,6 +305,7 @@ void printCurrentProfile() {
         }
     }
 
+    printf("Execute the command below to set your screens to the current arrangement:\n\n");
     printf("displayplacer");
     for (int i = 0; i < screenCount; i++) {
         ScreenConfig curScreen = screenConfigs[i];
