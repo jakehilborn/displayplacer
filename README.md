@@ -1,7 +1,7 @@
 # displayplacer
 macOS command line utility to configure multi-display resolutions and arrangements. Essentially XRandR for macOS.
 
-[<b>Download latest executable binary</b>](displayplacer)
+Install via Homebrew with `brew tap jakehilborn/jakehilborn && brew install displayplacer` or visit the [releases](https://github.com/jakehilborn/displayplacer/releases) tab.
 
 #### Usage:
 
