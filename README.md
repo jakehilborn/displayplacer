@@ -1,4 +1,4 @@
-# displayplacer
+## displayplacer
 macOS command line utility to configure multi-display resolutions and arrangements. Essentially XRandR for macOS.
 
 Install via Homebrew with `brew tap jakehilborn/jakehilborn && brew install displayplacer` or visit the [releases](https://github.com/jakehilborn/displayplacer/releases) tab.
@@ -32,3 +32,6 @@ Example w/ all features: `displayplacer 'id:69731906+862792382 res:1440x900 scal
 - Rotate your internal MacBook screen by executing `displayplacer 'id:<screenId> degree:<0/90/180/270>'`
 - The screen set to origin (0,0) will be set as the primary screen (white bar in system prefs).
 - The first screenId in a mirroring set will be the 'Optimize for' screen in the system prefs. You can only choose resolutions for the 'Optimize for' screen. If there is a mirroring resolution you need but cannot find, try making a different screenId the first of the set.
+
+#### Feedback:
+Please create a GitHub Issue for any feedback, feature requests, bugs, Homebrew issues, etc. Happy to accept pull requests too!
