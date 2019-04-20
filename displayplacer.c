@@ -168,13 +168,13 @@ void printHelp() {
             "Usage:\n"
             "    Show current screen info and possible resolutions: displayplacer list\n"
             "\n"
-            "    Screen config: displayplacer 'id:<screenId> res:<width>x<height>x<hz> scaling:<on/off> origin:(<x>,<y>) degree:<0/90/180/270>'\n"
+            "    Screen config: displayplacer \"id:<screenId> res:<width>x<height>x<hz> scaling:<on/off> origin:(<x>,<y>) degree:<0/90/180/270>\"\n"
             "\n"
-            "    Screen config using mode: displayplacer 'id:<screenId> mode:<modeNum> origin:(<x>,<y>) degree:<0/90/180/270>'\n"
+            "    Screen config using mode: displayplacer \"id:<screenId> mode:<modeNum> origin:(<x>,<y>) degree:<0/90/180/270>\"\n"
             "\n"
-            "    Set layout with a mirrored screen: displayplacer 'id:<mainScreenId>+<mirrorScreenId>+<mirrorScreenId> res:<width>x<height>x<hz> scaling:<on/off> origin:(<x>,<y>) degree:<0/90/180/270>'\n"
+            "    Set layout with a mirrored screen: displayplacer \"id:<mainScreenId>+<mirrorScreenId>+<mirrorScreenId> res:<width>x<height>x<hz> scaling:<on/off> origin:(<x>,<y>) degree:<0/90/180/270>\"\n"
             "\n"
-            "    Example w/ all features: displayplacer 'id:69731906+862792382 res:1440x900 scaling:on origin:(0,0) degree:0' 'id:374164677 res:768x1360x60 scaling:off origin:(1440,0) degree:90' 'id:173529877 mode:3 origin:(-1440,0) degree:270'\n"
+            "    Example w/ all features: displayplacer \"id:69731906+862792382 res:1440x900 scaling:on origin:(0,0) degree:0\" \"id:374164677 res:768x1360x60 scaling:off origin:(1440,0) degree:90\" \"id:173529877 mode:3 origin:(-1440,0) degree:270\"\n"
             "\n"
             "Instructions:\n"
             "    1. Manually set rotations 1st*, resolutions 2nd, and arrangement 3rd. For extra resolutions and rotations read 'Notes' below.\n"
@@ -189,8 +189,8 @@ void printHelp() {
             "Notes:\n"
             "    - *`displayplacer list` and system prefs only show resolutions for the screen's current rotation.\n"
             "    - ScreenIDs change when cables are plugged into different ports. To ensure screenIDs match your saved profiles, always plug cables into the same ports.\n"
-            "    - Use an extra resolution shown in `displayplacer list` by executing `displayplacer 'id:<screenId> mode:<modeNum>'`\n"
-            "    - Rotate your internal MacBook screen by executing `displayplacer 'id:<screenId> degree:<0/90/180/270>'`\n"
+            "    - Use an extra resolution shown in `displayplacer list` by executing `displayplacer \"id:<screenId> mode:<modeNum>\"`\n"
+            "    - Rotate your internal MacBook screen by executing `displayplacer \"id:<screenId> degree:<0/90/180/270>\"`\n"
             "    - The screen set to origin (0,0) will be set as the primary screen (white bar in system prefs).\n"
             "    - The first screenId in a mirroring set will be the 'Optimize for' screen in the system prefs. You can only choose resolutions for the 'Optimize for' screen. If there is a mirroring resolution you need but cannot find, try making a different screenId the first of the set.\n"
     );
@@ -236,7 +236,7 @@ void listScreens() {
 
         printf("Rotation: %i", (int) CGDisplayRotation(curScreen));
         if (CGDisplayIsBuiltin(curScreen)) {
-            printf(" - rotate internal screen example (may crash computer, but will be rotated after rebooting): `displayplacer 'id:%i degree:90'`", curScreen);
+            printf(" - rotate internal screen example (may crash computer, but will be rotated after rebooting): `displayplacer \"id:%i degree:90\"`", curScreen);
         }
         printf("\n");
         
@@ -335,7 +335,7 @@ void printCurrentProfile() {
             strlcat(mirrors, mirrorStrFormat, sizeof(mirrors));
         }
 
-        printf(" 'id:%i%s res:%ix%i%s scaling:%s origin:(%i,%i) degree:%i'", curScreen.id, mirrors, (int) CGDisplayPixelsWide(curScreen.id), (int) CGDisplayPixelsHigh(curScreen.id), hz, scaling, (int) CGDisplayBounds(curScreen.id).origin.x, (int) CGDisplayBounds(curScreen.id).origin.y, (int) CGDisplayRotation(curScreen.id));
+        printf(" \"id:%i%s res:%ix%i%s scaling:%s origin:(%i,%i) degree:%i\"", curScreen.id, mirrors, (int) CGDisplayPixelsWide(curScreen.id), (int) CGDisplayPixelsHigh(curScreen.id), hz, scaling, (int) CGDisplayBounds(curScreen.id).origin.x, (int) CGDisplayBounds(curScreen.id).origin.y, (int) CGDisplayRotation(curScreen.id));
     }
     printf("\n");
 }
