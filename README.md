@@ -13,7 +13,7 @@ Screen config using mode: `displayplacer "id:<screenId> mode:<modeNum> origin:(<
 
 Set layout with a mirrored screen: `displayplacer "id:<mainScreenId>+<mirrorScreenId>+<mirrorScreenId> res:<width>x<height>x<hz> scaling:<on/off> origin:(<x>,<y>) degree:<0/90/180/270>"`
 
-Example w/ all features: `displayplacer "id:69731906+862792382 res:1440x900 scaling:on origin:(0,0) degree:0" "id:374164677 res:768x1360x60 scaling:off origin:(1440,0) degree:90"`
+Example w/ all features: `displayplacer "id:18173D22-3EC6-E735-EEB4-B003BF681F30+F466F621-B5FA-04A0-0800-CFA6C258DECD res:1440x900 scaling:on origin:(0,0) degree:0" "id:4C405A05-8798-553B-3550-F93E7A7722BB res:768x1360x60 scaling:off origin:(1440,0) degree:90" "id:A46D2F5E-487B-CC69-C588-ECFD519016E5 mode:3 origin:(-1440,0) degree:270"`
 
 #### Instructions:
 1. Manually set rotations 1st*, resolutions 2nd, and arrangement 3rd. For extra resolutions and rotations read 'Notes' below.
@@ -27,7 +27,6 @@ Example w/ all features: `displayplacer "id:69731906+862792382 res:1440x900 scal
    
 #### Notes:
 - *`displayplacer list` and system prefs only show resolutions for the screen's current rotation.
-- ScreenIDs change when cables are plugged into different ports. To ensure screenIDs match your saved profiles, always plug cables into the same ports.
 - Use an extra resolution shown in `displayplacer list` by executing `displayplacer "id:<screenId> mode:<modeNum>"`
 - Rotate your internal MacBook screen by executing `displayplacer "id:<screenId> degree:<0/90/180/270>"`
 - The screen set to origin (0,0) will be set as the primary screen (white bar in system prefs).

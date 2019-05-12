@@ -43,11 +43,11 @@ int main(int argc, char* argv[]) {
                     propToken = strtok_r(NULL, ":", &propSavePtr);
 
                     char* idToken = strtok_r(propToken, "+", &propToken);
-                    screenConfigs[i].id = atoi(idToken);
+                    strlcpy(screenConfigs[i].uuid, idToken, sizeof(screenConfigs[i].uuid));
 
                     int j = 0;
                     while ((idToken = strtok_r(propToken, "+", &propToken))) {
-                        screenConfigs[i].mirrors[j] = atoi(idToken);
+                        strlcpy(screenConfigs[i].mirrorUUIDs[j], idToken, sizeof(screenConfigs[i].mirrorUUIDs[j]));
                         j++;
 
                         if (j > 127) {
@@ -121,30 +121,32 @@ int main(int argc, char* argv[]) {
     CGBeginDisplayConfiguration(&configRef);
     bool isSuccess = true; //returns non-zero exit code on any errors but allows for completing remaining program execution
     for (int i = 0; i < argc - 1; i++) {
-        if (!validateScreenOnline(screenList, screenCount, screenConfigs[i].id)) {
+        screenConfigs[i].id = convertUUIDtoID(screenConfigs[i].uuid);
+        if (!validateScreenOnline(screenList, screenCount, screenConfigs[i].id, screenConfigs[i].uuid)) {
             isSuccess = false;
             continue;
         }
 
         if (CGDisplayRotation(screenConfigs[i].id) != screenConfigs[i].degree) {
-            isSuccess = rotateScreen(screenConfigs[i].id, screenConfigs[i].degree) && isSuccess;
+            isSuccess = rotateScreen(screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].degree) && isSuccess;
         }
 
         for (int j = 0; j < screenConfigs[i].mirrorCount; j++) {
-            if (!validateScreenOnline(screenList, screenCount, screenConfigs[i].mirrors[j])) {
+            screenConfigs[i].mirrors[j] = convertUUIDtoID(screenConfigs[i].mirrorUUIDs[j]);
+            if (!validateScreenOnline(screenList, screenCount, screenConfigs[i].mirrors[j], screenConfigs[i].mirrorUUIDs[j])) {
                 isSuccess = false;
                 continue;
             }
 
             if (CGDisplayRotation(screenConfigs[i].mirrors[j]) != screenConfigs[i].degree) {
-                isSuccess = rotateScreen(screenConfigs[i].mirrors[j], screenConfigs[i].degree) && isSuccess;
+                isSuccess = rotateScreen(screenConfigs[i].mirrors[j], screenConfigs[i].mirrorUUIDs[j], screenConfigs[i].degree) && isSuccess;
             }
 
-            isSuccess = configureMirror(configRef, screenConfigs[i].id, screenConfigs[i].mirrors[j]) && isSuccess;
+            isSuccess = configureMirror(configRef, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].mirrors[j], screenConfigs[i].mirrorUUIDs[j]) && isSuccess;
         }
 
-        isSuccess = configureResolution(configRef, screenConfigs[i].id, screenConfigs[i].width, screenConfigs[i].height, screenConfigs[i].scaled, screenConfigs[i].hz, screenConfigs[i].modeNum) && isSuccess;
-        isSuccess = configureOrigin(configRef, screenConfigs[i].id, screenConfigs[i].x, screenConfigs[i].y) && isSuccess;
+        isSuccess = configureResolution(configRef, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].width, screenConfigs[i].height, screenConfigs[i].scaled, screenConfigs[i].hz, screenConfigs[i].modeNum) && isSuccess;
+        isSuccess = configureOrigin(configRef, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].x, screenConfigs[i].y) && isSuccess;
     }
 
     int retVal = CGCompleteDisplayConfiguration(configRef, kCGConfigurePermanently);
@@ -174,7 +176,7 @@ void printHelp() {
             "\n"
             "    Set layout with a mirrored screen: displayplacer \"id:<mainScreenId>+<mirrorScreenId>+<mirrorScreenId> res:<width>x<height>x<hz> scaling:<on/off> origin:(<x>,<y>) degree:<0/90/180/270>\"\n"
             "\n"
-            "    Example w/ all features: displayplacer \"id:69731906+862792382 res:1440x900 scaling:on origin:(0,0) degree:0\" \"id:374164677 res:768x1360x60 scaling:off origin:(1440,0) degree:90\" \"id:173529877 mode:3 origin:(-1440,0) degree:270\"\n"
+            "    Example w/ all features: displayplacer \"id:18173D22-3EC6-E735-EEB4-B003BF681F30+F466F621-B5FA-04A0-0800-CFA6C258DECD res:1440x900 scaling:on origin:(0,0) degree:0\" \"id:4C405A05-8798-553B-3550-F93E7A7722BB res:768x1360x60 scaling:off origin:(1440,0) degree:90\" \"id:A46D2F5E-487B-CC69-C588-ECFD519016E5 mode:3 origin:(-1440,0) degree:270\"\n"
             "\n"
             "Instructions:\n"
             "    1. Manually set rotations 1st*, resolutions 2nd, and arrangement 3rd. For extra resolutions and rotations read 'Notes' below.\n"
@@ -188,11 +190,13 @@ void printHelp() {
             "\n"
             "Notes:\n"
             "    - *`displayplacer list` and system prefs only show resolutions for the screen's current rotation.\n"
-            "    - ScreenIDs change when cables are plugged into different ports. To ensure screenIDs match your saved profiles, always plug cables into the same ports.\n"
             "    - Use an extra resolution shown in `displayplacer list` by executing `displayplacer \"id:<screenId> mode:<modeNum>\"`\n"
             "    - Rotate your internal MacBook screen by executing `displayplacer \"id:<screenId> degree:<0/90/180/270>\"`\n"
             "    - The screen set to origin (0,0) will be set as the primary screen (white bar in system prefs).\n"
             "    - The first screenId in a mirroring set will be the 'Optimize for' screen in the system prefs. You can only choose resolutions for the 'Optimize for' screen. If there is a mirroring resolution you need but cannot find, try making a different screenId the first of the set.\n"
+            "\n"
+            "Feedback:\n"
+            "    Please create a GitHub Issue for any feedback, feature requests, bugs, Homebrew issues, etc. Happy to accept pull requests too! https://github.com/jakehilborn/displayplacer\n"
     );
 }
 
@@ -216,8 +220,11 @@ void listScreens() {
 
     for (int i = 0; i < screenCount; i++) {
         CGDirectDisplayID curScreen = screenList[i];
-        
-        printf("Screen ID: %i\n", curScreen);
+
+        char curScreenUUID[UUID_SIZE];
+        CFStringGetCString(CFUUIDCreateString(kCFAllocatorDefault, CGDisplayCreateUUIDFromDisplayID(curScreen)), curScreenUUID, sizeof(curScreenUUID), kCFStringEncodingUTF8);
+        printf("Screen ID: %s\n", curScreenUUID);
+
         if (CGDisplayIsBuiltin(curScreen)) {
             printf("Type: MacBook built in screen\n");
         } else {
@@ -236,7 +243,7 @@ void listScreens() {
 
         printf("Rotation: %i", (int) CGDisplayRotation(curScreen));
         if (CGDisplayIsBuiltin(curScreen)) {
-            printf(" - rotate internal screen example (may crash computer, but will be rotated after rebooting): `displayplacer \"id:%i degree:90\"`", curScreen);
+            printf(" - rotate internal screen example (may crash computer, but will be rotated after rebooting): `displayplacer \"id:%s degree:90\"`", curScreenUUID);
         }
         printf("\n");
         
@@ -327,31 +334,46 @@ void printCurrentProfile() {
 
         char* scaling = (curMode.derived.density == 2.0) ? "on" : "off";
 
-        char mirrors[1400]; //large enough to hold 127 mirrors with IDs that are 10 char (max uint32 size)
+        char mirrors[UUID_SIZE * MIRROR_MAX];
         strlcpy(mirrors, "", sizeof(mirrors));
-        char mirrorStrFormat[12];
         for (int j = 0; j < curScreen.mirrorCount; j++) {
-            snprintf(mirrorStrFormat, sizeof(mirrorStrFormat), "+%i", curScreen.mirrors[j]);
-            strlcat(mirrors, mirrorStrFormat, sizeof(mirrors));
+            char mirrorUUID[UUID_SIZE];
+            CFStringGetCString(CFUUIDCreateString(kCFAllocatorDefault, CGDisplayCreateUUIDFromDisplayID(curScreen.mirrors[j])), mirrorUUID, sizeof(mirrorUUID), kCFStringEncodingUTF8);
+
+            strlcat(mirrors, "+", sizeof(mirrors));
+            strlcat(mirrors, mirrorUUID, sizeof(mirrors));
         }
 
-        printf(" \"id:%i%s res:%ix%i%s scaling:%s origin:(%i,%i) degree:%i\"", curScreen.id, mirrors, (int) CGDisplayPixelsWide(curScreen.id), (int) CGDisplayPixelsHigh(curScreen.id), hz, scaling, (int) CGDisplayBounds(curScreen.id).origin.x, (int) CGDisplayBounds(curScreen.id).origin.y, (int) CGDisplayRotation(curScreen.id));
+        char curScreenUUID[UUID_SIZE];
+        CFStringGetCString(CFUUIDCreateString(kCFAllocatorDefault, CGDisplayCreateUUIDFromDisplayID(curScreen.id)), curScreenUUID, sizeof(curScreenUUID), kCFStringEncodingUTF8);
+
+        printf(" \"id:%s%s res:%ix%i%s scaling:%s origin:(%i,%i) degree:%i\"", curScreenUUID, mirrors, (int) CGDisplayPixelsWide(curScreen.id), (int) CGDisplayPixelsHigh(curScreen.id), hz, scaling, (int) CGDisplayBounds(curScreen.id).origin.x, (int) CGDisplayBounds(curScreen.id).origin.y, (int) CGDisplayRotation(curScreen.id));
     }
     printf("\n");
 }
 
-bool validateScreenOnline(CGDirectDisplayID onlineDisplayList[], int screenCount, CGDirectDisplayID screenId) {
+CGDirectDisplayID convertUUIDtoID(char* uuid) {
+    if (strstr(uuid, "-") == NULL) { //backward compatability with legacy integer ID format
+        return atoi(uuid);
+    }
+
+    CFStringRef uuidStringRef = CFStringCreateWithCString(kCFAllocatorDefault, uuid, kCFStringEncodingUTF8);
+    CFUUIDRef uuidRef = CFUUIDCreateFromString(kCFAllocatorDefault, uuidStringRef);
+    return CGDisplayGetDisplayIDFromUUID(uuidRef);
+}
+
+bool validateScreenOnline(CGDirectDisplayID onlineDisplayList[], int screenCount, CGDirectDisplayID screenId, char* screenUUID) {
     for (int i = 0; i < screenCount; i++) {
         if (onlineDisplayList[i] == screenId) {
             return true;
         }
     }
 
-    fprintf(stderr, "Unable to find screen %i - skipping changes for that screen\n", screenId);
+    fprintf(stderr, "Unable to find screen %s - skipping changes for that screen\n", screenUUID);
     return false;
 }
 
-bool rotateScreen(CGDirectDisplayID screenId, int degree) {
+bool rotateScreen(CGDirectDisplayID screenId, char* screenUUID, int degree) {
     io_service_t service = CGDisplayIOServicePort(screenId);
     IOOptionBits options;
 
@@ -373,25 +395,25 @@ bool rotateScreen(CGDirectDisplayID screenId, int degree) {
     int retVal = IOServiceRequestProbe(service, options);
 
     if (retVal != 0) {
-        fprintf(stderr, "Error rotating screen %i\n", screenId);
+        fprintf(stderr, "Error rotating screen %s\n", screenUUID);
         return false;
     }
 
     return true;
 }
 
-bool configureMirror(CGDisplayConfigRef configRef, CGDirectDisplayID primaryScreenId, CGDirectDisplayID mirrorScreenId) {
+bool configureMirror(CGDisplayConfigRef configRef, CGDirectDisplayID primaryScreenId, char* primaryScreenUUID, CGDirectDisplayID mirrorScreenId, char* mirrorScreenUUID) {
     int retVal = CGConfigureDisplayMirrorOfDisplay(configRef, mirrorScreenId, primaryScreenId);
 
     if (retVal != 0) {
-        fprintf(stderr, "Error making the secondary screen %i mirror the primary screen %i\n", mirrorScreenId, primaryScreenId);
+        fprintf(stderr, "Error making the secondary screen %s mirror the primary screen %s\n", mirrorScreenUUID, primaryScreenUUID);
         return false;
     }
 
     return true;
 }
 
-bool configureResolution(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, int width, int height, bool scaled, int hz, int modeNum) {
+bool configureResolution(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, char* screenUUID, int width, int height, bool scaled, int hz, int modeNum) {
     int modeCount;
     modes_D4* modes;
 
@@ -427,27 +449,27 @@ bool configureResolution(CGDisplayConfigRef configRef, CGDirectDisplayID screenI
     //no matching resolution found
     if(scaled) {
         if(hz) { //if screen supports different framerates
-            fprintf(stderr, "Screen ID %i: could not find res=%ix%ix%i, scaled\n", screenId, width, height, hz);
+            fprintf(stderr, "Screen ID %s: could not find res=%ix%ix%i, scaled\n", screenUUID, width, height, hz);
         } else {
-            fprintf(stderr, "Screen ID %i: could not find res=%ix%i, scaled\n", screenId, width, height);
+            fprintf(stderr, "Screen ID %s: could not find res=%ix%i, scaled\n", screenUUID, width, height);
         }
     }
     else { //scaling off
         if(hz) { //if screen supports different framerates
-            fprintf(stderr, "Screen ID %i: could not find res=%ix%ix%i\n", screenId, width, height, hz);
+            fprintf(stderr, "Screen ID %s: could not find res=%ix%ix%i\n", screenUUID, width, height, hz);
         } else {
-            fprintf(stderr, "Screen ID %i: could not find res=%ix%i\n", screenId, width, height);
+            fprintf(stderr, "Screen ID %s: could not find res=%ix%i\n", screenUUID, width, height);
         }
     }
 
     return false;
 }
 
-bool configureOrigin(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, int x, int y) {
+bool configureOrigin(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, char* screenUUID, int x, int y) {
     int retVal = CGConfigureDisplayOrigin(configRef, screenId, x, y);
 
     if (retVal != 0) {
-        fprintf(stderr, "Error moving screen %i to %ix%i\n", screenId, x, y);
+        fprintf(stderr, "Error moving screen %s to %ix%i\n", screenUUID, x, y);
         return false;
     }
 

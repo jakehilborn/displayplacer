@@ -42,27 +42,33 @@ void CopyAllDisplayModes(CGDirectDisplayID display, modes_D4** modes, int* cnt)
     }
 }
 
+const int UUID_SIZE = 37;
+const int MIRROR_MAX = 127;
+
 typedef struct
 {
-    CGDirectDisplayID id;           //display identifier
-    CGDirectDisplayID mirrors[127]; //display IDs that mirror this display
-    int mirrorCount;                //number of displays that mirror this display
-    int width;                      //pixels wide
-    int height;                     //pixels tall
-    int hz;                         //refresh rate
-    bool scaled;                    //scaling
-    int x;                          //origin x position
-    int y;                          //origin y position
-    int modeNum;                    //display mode id
-    int degree;                     //rotation degree
+    char uuid[UUID_SIZE];                    //user input display identifier that stays consistent despite GPU or port changes
+    char mirrorUUIDs[MIRROR_MAX][UUID_SIZE]; //user input display UUIDs that mirror this display
+    CGDirectDisplayID id;                    //display identifier used for Quartz Display Services
+    CGDirectDisplayID mirrors[MIRROR_MAX];   //display IDs that mirror this display used for Quartz Display Services
+    int mirrorCount;                         //number of displays that mirror this display
+    int width;                               //pixels wide
+    int height;                              //pixels tall
+    int hz;                                  //refresh rate
+    bool scaled;                             //scaling
+    int x;                                   //origin x position
+    int y;                                   //origin y position
+    int modeNum;                             //display mode id
+    int degree;                              //rotation degree
 } ScreenConfig;
 
 void printHelp();
 void printVersion();
 void listScreens();
 void printCurrentProfile();
-bool validateScreenOnline(CGDirectDisplayID onlineDisplayList[], int screenCount, CGDirectDisplayID screenId);
-bool rotateScreen(CGDirectDisplayID, int degree);
-bool configureMirror(CGDisplayConfigRef configRef, CGDirectDisplayID primaryScreenId, CGDirectDisplayID mirrorScreenId);
-bool configureResolution(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, int width, int height, bool scaled, int hz, int modeNum);
-bool configureOrigin(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, int x, int y);
+CGDirectDisplayID convertUUIDtoID(char* uuid);
+bool validateScreenOnline(CGDirectDisplayID onlineDisplayList[], int screenCount, CGDirectDisplayID screenId, char* screenUUID);
+bool rotateScreen(CGDirectDisplayID screenId, char* screenUUID, int degree);
+bool configureMirror(CGDisplayConfigRef configRef, CGDirectDisplayID primaryScreenId, char* primaryScreenUUID, CGDirectDisplayID mirrorScreenId, char* mirrorScreenUUID);
+bool configureResolution(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, char* screenUUID, int width, int height, bool scaled, int hz, int modeNum);
+bool configureOrigin(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, char* screenUUID, int x, int y);
