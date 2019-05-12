@@ -9,12 +9,12 @@
 #include "header.h"
 
 int main(int argc, char* argv[]) {
-    if(argc == 1 || strcmp(argv[1], "--help") == 0) {
+    if (argc == 1 || strcmp(argv[1], "--help") == 0) {
         printHelp();
         return 0;
     }
 
-    if(strcmp(argv[1], "--version") == 0) {
+    if (strcmp(argv[1], "--version") == 0) {
         printVersion();
         return 0;
     }
@@ -259,15 +259,15 @@ void listScreens() {
             modes_D4 mode = modes[i];
             
             printf("  ");
-            if(mode.derived.density == 2.0) { //scaling on
-                if(mode.derived.freq) { //if screen supports different framerates
+            if (mode.derived.density == 2.0) { //scaling on
+                if (mode.derived.freq) { //if screen supports different framerates
                     printf("mode %i: res=%dx%dx%i, scaled", i, mode.derived.width, mode.derived.height, mode.derived.freq);
                 } else {
                     printf("mode %i: res=%dx%d, scaled", i, mode.derived.width, mode.derived.height);
                 }
             }
             else { //scaling off
-                if(mode.derived.freq) { //if screen supports different framerates
+                if (mode.derived.freq) { //if screen supports different framerates
                     printf("mode %i: res=%dx%dx%i", i, mode.derived.width, mode.derived.height, mode.derived.freq);
                 } else {
                     printf("mode %i: res=%dx%d", i, mode.derived.width, mode.derived.height);
@@ -447,15 +447,15 @@ bool configureResolution(CGDisplayConfigRef configRef, CGDirectDisplayID screenI
     }
 
     //no matching resolution found
-    if(scaled) {
-        if(hz) { //if screen supports different framerates
+    if (scaled) {
+        if (hz) { //if screen supports different framerates
             fprintf(stderr, "Screen ID %s: could not find res=%ix%ix%i, scaled\n", screenUUID, width, height, hz);
         } else {
             fprintf(stderr, "Screen ID %s: could not find res=%ix%i, scaled\n", screenUUID, width, height);
         }
     }
     else { //scaling off
-        if(hz) { //if screen supports different framerates
+        if (hz) { //if screen supports different framerates
             fprintf(stderr, "Screen ID %s: could not find res=%ix%ix%i\n", screenUUID, width, height, hz);
         } else {
             fprintf(stderr, "Screen ID %s: could not find res=%ix%i\n", screenUUID, width, height);
