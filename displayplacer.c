@@ -29,6 +29,7 @@ int main(int argc, char* argv[]) {
     
     for (int i = 0; i < argc - 1; i++) {
         screenConfigs[i].depth = 0; //overwrite garbage in memory for optional params
+        screenConfigs[i].hz = 0;
         screenConfigs[i].modeNum = -1; //set modeNum -1 in case user wants to set and use mode 0
 
         char* propGroup = argv[i + 1];
@@ -66,13 +67,18 @@ int main(int argc, char* argv[]) {
                     screenConfigs[i].width = atoi(resToken);
                     resToken = strtok_r(NULL, "x", &resSavePtr);
                     screenConfigs[i].height = atoi(resToken);
+
+                    //backward compatability with legacy hz format "res:3840x2160x60"
                     resToken = strtok_r(NULL, "x", &resSavePtr);
                     if (resToken) {
                         screenConfigs[i].hz = atoi(resToken);
-                    } else {
-                        screenConfigs[i].hz = 0;
                     }
-                    
+
+                    break;
+                case 'h': //hertz
+                    propToken = strtok_r(NULL, ":", &propSavePtr);
+
+                    screenConfigs[i].hz = atoi(propToken);
                     break;
                 case 'c': //color_depth
                     propToken = strtok_r(NULL, ":", &propSavePtr);
@@ -280,7 +286,7 @@ void listScreens() {
             printf("  mode %i: res:%dx%d", i, mode.derived.width, mode.derived.height);
 
             if (mode.derived.freq) {
-                printf("x%i", mode.derived.freq);
+                printf(" hz:%i", mode.derived.freq);
             }
 
             printf(" color_depth:%i", mode.derived.depth);
@@ -342,10 +348,10 @@ void printCurrentProfile() {
         modes_D4 curMode;
         CGSGetDisplayModeDescriptionOfLength(curScreen.id, curModeId, &curMode, 0xD4);
 
-        char hz[5];
+        char hz[8]; //hz:999 \0
         strlcpy(hz, "", sizeof(hz)); //most displays do not have hz option
         if (curMode.derived.freq) {
-            snprintf(hz, sizeof(hz), "x%i", curMode.derived.freq);
+            snprintf(hz, sizeof(hz), "hz:%i ", curMode.derived.freq);
         }
 
         char* scaling = (curMode.derived.density == 2.0) ? "on" : "off";
@@ -363,7 +369,7 @@ void printCurrentProfile() {
         char curScreenUUID[UUID_SIZE];
         CFStringGetCString(CFUUIDCreateString(kCFAllocatorDefault, CGDisplayCreateUUIDFromDisplayID(curScreen.id)), curScreenUUID, sizeof(curScreenUUID), kCFStringEncodingUTF8);
 
-        printf(" \"id:%s%s res:%ix%i%s color_depth:%i scaling:%s origin:(%i,%i) degree:%i\"", curScreenUUID, mirrors, (int) CGDisplayPixelsWide(curScreen.id), (int) CGDisplayPixelsHigh(curScreen.id), hz, curMode.derived.depth, scaling, (int) CGDisplayBounds(curScreen.id).origin.x, (int) CGDisplayBounds(curScreen.id).origin.y, (int) CGDisplayRotation(curScreen.id));
+        printf(" \"id:%s%s res:%ix%i %scolor_depth:%i scaling:%s origin:(%i,%i) degree:%i\"", curScreenUUID, mirrors, (int) CGDisplayPixelsWide(curScreen.id), (int) CGDisplayPixelsHigh(curScreen.id), hz, curMode.derived.depth, scaling, (int) CGDisplayBounds(curScreen.id).origin.x, (int) CGDisplayBounds(curScreen.id).origin.y, (int) CGDisplayRotation(curScreen.id));
     }
     printf("\n");
 }
