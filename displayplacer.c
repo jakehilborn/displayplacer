@@ -28,6 +28,7 @@ int main(int argc, char* argv[]) {
     ScreenConfig* screenConfigs = malloc((argc - 1) * sizeof(ScreenConfig));
     
     for (int i = 0; i < argc - 1; i++) {
+        screenConfigs[i].depth = 0; //overwrite garbage in memory for optional params
         screenConfigs[i].modeNum = -1; //set modeNum -1 in case user wants to set and use mode 0
 
         char* propGroup = argv[i + 1];
@@ -72,6 +73,11 @@ int main(int argc, char* argv[]) {
                         screenConfigs[i].hz = 0;
                     }
                     
+                    break;
+                case 'c': //color_depth
+                    propToken = strtok_r(NULL, ":", &propSavePtr);
+
+                    screenConfigs[i].depth = atoi(propToken);
                     break;
                 case 's': //scaling
                     propToken = strtok_r(NULL, ":", &propSavePtr);
@@ -145,7 +151,7 @@ int main(int argc, char* argv[]) {
             isSuccess = configureMirror(configRef, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].mirrors[j], screenConfigs[i].mirrorUUIDs[j]) && isSuccess;
         }
 
-        isSuccess = configureResolution(configRef, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].width, screenConfigs[i].height, screenConfigs[i].scaled, screenConfigs[i].hz, screenConfigs[i].modeNum) && isSuccess;
+        isSuccess = configureResolution(configRef, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].width, screenConfigs[i].height, screenConfigs[i].hz, screenConfigs[i].depth, screenConfigs[i].scaled, screenConfigs[i].modeNum) && isSuccess;
         isSuccess = configureOrigin(configRef, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].x, screenConfigs[i].y) && isSuccess;
     }
 
@@ -221,6 +227,11 @@ void listScreens() {
     for (int i = 0; i < screenCount; i++) {
         CGDirectDisplayID curScreen = screenList[i];
 
+        int curModeId;
+        CGSGetCurrentDisplayMode(curScreen, &curModeId);
+        modes_D4 curMode;
+        CGSGetDisplayModeDescriptionOfLength(curScreen, curModeId, &curMode, 0xD4);
+
         char curScreenUUID[UUID_SIZE];
         CFStringGetCString(CFUUIDCreateString(kCFAllocatorDefault, CGDisplayCreateUUIDFromDisplayID(curScreen)), curScreenUUID, sizeof(curScreenUUID), kCFStringEncodingUTF8);
         printf("Screen ID: %s\n", curScreenUUID);
@@ -234,6 +245,17 @@ void listScreens() {
         }
 
         printf("Resolution: %ix%i\n", (int) CGDisplayPixelsWide(curScreen), (int) CGDisplayPixelsHigh(curScreen));
+
+        if (curMode.derived.freq) {
+            printf("Hertz: %i\n", curMode.derived.freq);
+        } else {
+            printf("Hertz: N/A\n");
+        }
+
+        printf("Color Depth: %i\n", curMode.derived.depth);
+
+        char* scaling = (curMode.derived.density == 2.0) ? "on" : "off";
+        printf("Scaling:%s\n", scaling);
 
         printf("Origin: (%i,%i)", (int) CGDisplayBounds(curScreen).origin.x, (int) CGDisplayBounds(curScreen).origin.y);
         if (CGDisplayIsMain(curScreen)) {
@@ -251,32 +273,26 @@ void listScreens() {
         modes_D4* modes;
         CopyAllDisplayModes(curScreen, &modes, &modeCount);
 
-        int curModeId;
-        CGSGetCurrentDisplayMode(curScreen, &curModeId);
-
         printf("Resolutions for rotation %i:\n", (int) CGDisplayRotation(curScreen));
-        for(int i = 0; i < modeCount; i++) {
+        for (int i = 0; i < modeCount; i++) {
             modes_D4 mode = modes[i];
-            
-            printf("  ");
-            if (mode.derived.density == 2.0) { //scaling on
-                if (mode.derived.freq) { //if screen supports different framerates
-                    printf("mode %i: res=%dx%dx%i, scaled", i, mode.derived.width, mode.derived.height, mode.derived.freq);
-                } else {
-                    printf("mode %i: res=%dx%d, scaled", i, mode.derived.width, mode.derived.height);
-                }
+
+            printf("  mode %i: res:%dx%d", i, mode.derived.width, mode.derived.height);
+
+            if (mode.derived.freq) {
+                printf("x%i", mode.derived.freq);
             }
-            else { //scaling off
-                if (mode.derived.freq) { //if screen supports different framerates
-                    printf("mode %i: res=%dx%dx%i", i, mode.derived.width, mode.derived.height, mode.derived.freq);
-                } else {
-                    printf("mode %i: res=%dx%d", i, mode.derived.width, mode.derived.height);
-                }
+
+            printf(" color_depth:%i", mode.derived.depth);
+
+            if (mode.derived.density == 2.0) {
+                printf(" scaling:on");
             }
 
             if (i == curModeId) {
                 printf(" <-- current mode");
             }
+
             printf("\n");
         }
         printf("\n");
@@ -347,7 +363,7 @@ void printCurrentProfile() {
         char curScreenUUID[UUID_SIZE];
         CFStringGetCString(CFUUIDCreateString(kCFAllocatorDefault, CGDisplayCreateUUIDFromDisplayID(curScreen.id)), curScreenUUID, sizeof(curScreenUUID), kCFStringEncodingUTF8);
 
-        printf(" \"id:%s%s res:%ix%i%s scaling:%s origin:(%i,%i) degree:%i\"", curScreenUUID, mirrors, (int) CGDisplayPixelsWide(curScreen.id), (int) CGDisplayPixelsHigh(curScreen.id), hz, scaling, (int) CGDisplayBounds(curScreen.id).origin.x, (int) CGDisplayBounds(curScreen.id).origin.y, (int) CGDisplayRotation(curScreen.id));
+        printf(" \"id:%s%s res:%ix%i%s color_depth:%i scaling:%s origin:(%i,%i) degree:%i\"", curScreenUUID, mirrors, (int) CGDisplayPixelsWide(curScreen.id), (int) CGDisplayPixelsHigh(curScreen.id), hz, curMode.derived.depth, scaling, (int) CGDisplayBounds(curScreen.id).origin.x, (int) CGDisplayBounds(curScreen.id).origin.y, (int) CGDisplayRotation(curScreen.id));
     }
     printf("\n");
 }
@@ -413,7 +429,7 @@ bool configureMirror(CGDisplayConfigRef configRef, CGDirectDisplayID primaryScre
     return true;
 }
 
-bool configureResolution(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, char* screenUUID, int width, int height, bool scaled, int hz, int modeNum) {
+bool configureResolution(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, char* screenUUID, int width, int height, int hz, int depth, bool scaled, int modeNum) {
     int modeCount;
     modes_D4* modes;
 
@@ -424,43 +440,46 @@ bool configureResolution(CGDisplayConfigRef configRef, CGDirectDisplayID screenI
 
     CopyAllDisplayModes(screenId, &modes, &modeCount);
 
+    modes_D4 bestMode = modes[0];
+    bool modeFound = false;
+
     //loop through all modes looking for one that matches user input resolution
     for (int i = 0; i < modeCount; i++) {
-        modes_D4 mode = modes[i];
+        modes_D4 curMode = modes[i];
         
-        if (mode.derived.width != width) {
-            continue;
-        }
-        if (mode.derived.height != height) {
-            continue;
-        }
-        if (scaled && mode.derived.density != 2.0) {
-            continue;
-        }
-        if (hz && mode.derived.freq != hz) {
-            continue;
+        //prioritize exact matches of user input params
+        if (curMode.derived.width != width) continue;
+        if (curMode.derived.height != height) continue;
+        if (hz && curMode.derived.freq != hz) continue;
+        if (depth && curMode.derived.depth != depth) continue;
+        if (scaled && curMode.derived.density != 2.0) continue;
+
+        if (!modeFound) {
+            modeFound = true;
+            bestMode = curMode;
         }
 
-        //matching resolution found
-        CGSConfigureDisplayMode(configRef, screenId, i);
+        if (curMode.derived.freq > bestMode.derived.freq || (curMode.derived.freq == bestMode.derived.freq && curMode.derived.depth > bestMode.derived.depth)) {
+            bestMode = curMode;
+        }
+    }
+
+    if (modeFound) {
+        CGSConfigureDisplayMode(configRef, screenId, bestMode.derived.mode);
         return true;
     }
 
-    //no matching resolution found
-    if (scaled) {
-        if (hz) { //if screen supports different framerates
-            fprintf(stderr, "Screen ID %s: could not find res=%ix%ix%i, scaled\n", screenUUID, width, height, hz);
-        } else {
-            fprintf(stderr, "Screen ID %s: could not find res=%ix%i, scaled\n", screenUUID, width, height);
-        }
+    fprintf(stderr, "Screen ID %s: could not find res:%ix%i", screenUUID, width, height);
+    if (hz) {
+        fprintf(stderr, "x%i", hz);
     }
-    else { //scaling off
-        if (hz) { //if screen supports different framerates
-            fprintf(stderr, "Screen ID %s: could not find res=%ix%ix%i\n", screenUUID, width, height, hz);
-        } else {
-            fprintf(stderr, "Screen ID %s: could not find res=%ix%i\n", screenUUID, width, height);
-        }
+    if (depth) {
+        fprintf(stderr, " color_depth:%i", depth);
     }
+    char* scalingString = (scaled == 2.0) ? "on" : "off";
+    fprintf(stderr, " scaling:%s", scalingString);
+
+    fprintf(stderr, "\n");
 
     return false;
 }

@@ -55,6 +55,7 @@ typedef struct
     int width;                               //pixels wide
     int height;                              //pixels tall
     int hz;                                  //refresh rate
+    int depth;                               //color depth
     bool scaled;                             //scaling
     int x;                                   //origin x position
     int y;                                   //origin y position
@@ -70,5 +71,5 @@ CGDirectDisplayID convertUUIDtoID(char* uuid);
 bool validateScreenOnline(CGDirectDisplayID onlineDisplayList[], int screenCount, CGDirectDisplayID screenId, char* screenUUID);
 bool rotateScreen(CGDirectDisplayID screenId, char* screenUUID, int degree);
 bool configureMirror(CGDisplayConfigRef configRef, CGDirectDisplayID primaryScreenId, char* primaryScreenUUID, CGDirectDisplayID mirrorScreenId, char* mirrorScreenUUID);
-bool configureResolution(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, char* screenUUID, int width, int height, bool scaled, int hz, int modeNum);
+bool configureResolution(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, char* screenUUID, int width, int height, int hz, int depth, bool scaled, int modeNum);
 bool configureOrigin(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, char* screenUUID, int x, int y);
