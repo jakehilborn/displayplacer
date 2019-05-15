@@ -356,7 +356,7 @@ void printCurrentProfile() {
 
         char* scaling = (curMode.derived.density == 2.0) ? "on" : "off";
 
-        char mirrors[UUID_SIZE * MIRROR_MAX];
+        char mirrors[(UUID_SIZE + 1) * MIRROR_MAX + 1];
         strlcpy(mirrors, "", sizeof(mirrors));
         for (int j = 0; j < curScreen.mirrorCount; j++) {
             char mirrorUUID[UUID_SIZE];
