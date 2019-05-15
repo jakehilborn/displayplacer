@@ -240,7 +240,8 @@ void listScreens() {
 
         char curScreenUUID[UUID_SIZE];
         CFStringGetCString(CFUUIDCreateString(kCFAllocatorDefault, CGDisplayCreateUUIDFromDisplayID(curScreen)), curScreenUUID, sizeof(curScreenUUID), kCFStringEncodingUTF8);
-        printf("Screen ID: %s\n", curScreenUUID);
+        printf("Persistent screen id: %s\n", curScreenUUID);
+        printf("Contextual screen id: %i\n", curScreen);
 
         if (CGDisplayIsBuiltin(curScreen)) {
             printf("Type: MacBook built in screen\n");
