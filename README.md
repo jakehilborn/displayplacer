@@ -1,3 +1,5 @@
+<img align="right" src="animation.gif">
+
 ## displayplacer
 macOS command line utility to configure multi-display resolutions and arrangements. Essentially XRandR for macOS.
 
