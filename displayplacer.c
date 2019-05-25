@@ -377,7 +377,7 @@ void printCurrentProfile() {
 }
 
 CGDirectDisplayID convertUUIDtoID(char* uuid) {
-    if (strstr(uuid, "-") == NULL) { //backward compatability with legacy integer ID format
+    if (strstr(uuid, "-") == NULL) { //contextual screen id
         return atoi(uuid);
     }
 
@@ -451,7 +451,7 @@ bool configureResolution(CGDisplayConfigRef configRef, CGDirectDisplayID screenI
     modes_D4 bestMode = modes[0];
     bool modeFound = false;
 
-    //loop through all modes looking for one that matches user input resolution
+    //loop through all modes looking for one that matches user input params
     for (int i = 0; i < modeCount; i++) {
         modes_D4 curMode = modes[i];
         
@@ -479,7 +479,7 @@ bool configureResolution(CGDisplayConfigRef configRef, CGDirectDisplayID screenI
 
     fprintf(stderr, "Screen ID %s: could not find res:%ix%i", screenUUID, width, height);
     if (hz) {
-        fprintf(stderr, "x%i", hz);
+        fprintf(stderr, " hz:%i", hz);
     }
     if (depth) {
         fprintf(stderr, " color_depth:%i", depth);
