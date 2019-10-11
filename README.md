@@ -24,7 +24,7 @@ Example w/ all features: `displayplacer "id:18173D22-3EC6-E735-EEB4-B003BF681F30
     - Choose desired resolutions (use displayplacer for extra resolutions).
     - Drag the white bar to your desired primary screen.
     - Arrange screens as desired and/or enable mirroring. To enable partial mirroring hold the alt/option key and drag a display on top of another.
-2. Use `displayplacer list` to print your current layout's args so you can create profiles for scripting/hotkeys with Automator, BetterTouchTool, etc.
+2. Use `displayplacer list` to print your current layout's args so you can create profiles for scripting/hotkeys with [Automator](https://github.com/jakehilborn/displayplacer/issues/13), BetterTouchTool, etc.
 
 #### Notes:
 - *`displayplacer list` and system prefs only show resolutions for the screen's current rotation.
