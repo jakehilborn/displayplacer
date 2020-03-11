@@ -30,6 +30,7 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < argc - 1; i++) {
         screenConfigs[i].depth = 0; //overwrite garbage in memory for optional params
         screenConfigs[i].hz = 0;
+        screenConfigs[i].enabled = -1;
         screenConfigs[i].modeNum = -1; //set modeNum -1 in case user wants to set and use mode 0
 
         char* propGroup = argv[i + 1];
@@ -85,6 +86,16 @@ int main(int argc, char* argv[]) {
 
                     screenConfigs[i].depth = atoi(propToken);
                     break;
+                case 'e': // enabled
+                    propToken = strtok_r(NULL, ":", &propSavePtr);
+
+                    if (strcmp(propToken, "on") == 0) {
+                        screenConfigs[i].enabled = 1;
+                    } else {
+                        screenConfigs[i].enabled = 0;
+                    }
+
+                    break;
                 case 's': //scaling
                     propToken = strtok_r(NULL, ":", &propSavePtr);
 
@@ -139,6 +150,13 @@ int main(int argc, char* argv[]) {
             continue;
         }
 
+        if(screenConfigs[i].enabled != -1) {
+            int enabled = CGDisplayIsActive(screenConfigs[i].id) ? 1 : 0;
+            if(screenConfigs[i].enabled != enabled) {
+                isSuccess = CGSConfigureDisplayEnabled(configRef, screenConfigs[i].id, screenConfigs[i].enabled);
+            }            
+        }
+
         if (CGDisplayRotation(screenConfigs[i].id) != screenConfigs[i].degree) {
             isSuccess = rotateScreen(screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].degree) && isSuccess;
         }
@@ -182,7 +200,7 @@ void printHelp() {
             "Usage:\n"
             "    Show current screen info and possible resolutions: displayplacer list\n"
             "\n"
-            "    Apply screen config (hz & color_depth are optional): displayplacer \"id:<screenId> res:<width>x<height> hz:<num> color_depth:<num> scaling:<on/off> origin:(<x>,<y>) degree:<0/90/180/270>\"\n"
+            "    Apply screen config (hz & color_depth & enabled are optional): displayplacer \"id:<screenId> res:<width>x<height> hz:<num> color_depth:<num> enabled:<on/off> scaling:<on/off> origin:(<x>,<y>) degree:<0/90/180/270>\"\n"
             "\n"
             "    Apply screen config using mode: displayplacer \"id:<screenId> mode:<modeNum> origin:(<x>,<y>) degree:<0/90/180/270>\"\n"
             "\n"
@@ -263,7 +281,7 @@ void listScreens() {
         printf("Color Depth: %i\n", curMode.derived.depth);
 
         char* scaling = (curMode.derived.density == 2.0) ? "on" : "off";
-        printf("Scaling:%s\n", scaling);
+        printf("Scaling: %s\n", scaling);
 
         printf("Origin: (%i,%i)", (int) CGDisplayBounds(curScreen).origin.x, (int) CGDisplayBounds(curScreen).origin.y);
         if (CGDisplayIsMain(curScreen)) {
@@ -276,6 +294,9 @@ void listScreens() {
             printf(" - rotate internal screen example (may crash computer, but will be rotated after rebooting): `displayplacer \"id:%s degree:90\"`", curScreenUUID);
         }
         printf("\n");
+
+        const char* active = CGDisplayIsActive(curScreen) == true ? "on" : "off";
+        printf("Enabled: %d\n", active);
         
         int modeCount;
         modes_D4* modes;
@@ -349,6 +370,7 @@ void printCurrentProfile() {
         CGSGetCurrentDisplayMode(curScreen.id, &curModeId);
         modes_D4 curMode;
         CGSGetDisplayModeDescriptionOfLength(curScreen.id, curModeId, &curMode, 0xD4);
+        boolean_t active = CGDisplayIsActive(curScreen.id);
 
         char hz[8]; //hz:999 \0
         strlcpy(hz, "", sizeof(hz)); //most displays do not have hz option
@@ -371,7 +393,18 @@ void printCurrentProfile() {
         char curScreenUUID[UUID_SIZE];
         CFStringGetCString(CFUUIDCreateString(kCFAllocatorDefault, CGDisplayCreateUUIDFromDisplayID(curScreen.id)), curScreenUUID, sizeof(curScreenUUID), kCFStringEncodingUTF8);
 
-        printf(" \"id:%s%s res:%ix%i %scolor_depth:%i scaling:%s origin:(%i,%i) degree:%i\"", curScreenUUID, mirrors, (int) CGDisplayPixelsWide(curScreen.id), (int) CGDisplayPixelsHigh(curScreen.id), hz, curMode.derived.depth, scaling, (int) CGDisplayBounds(curScreen.id).origin.x, (int) CGDisplayBounds(curScreen.id).origin.y, (int) CGDisplayRotation(curScreen.id));
+        printf(" \"id:%s%s res:%ix%i %scolor_depth:%i enabled:%s scaling:%s origin:(%i,%i) degree:%i\"", 
+            curScreenUUID, mirrors, 
+            (int) CGDisplayPixelsWide(curScreen.id), 
+            (int) CGDisplayPixelsHigh(curScreen.id), 
+            hz, 
+            curMode.derived.depth, 
+            active ? "on" : "off",
+            scaling, 
+            (int) CGDisplayBounds(curScreen.id).origin.x, 
+            (int) CGDisplayBounds(curScreen.id).origin.y, 
+            (int) CGDisplayRotation(curScreen.id)
+        );
     }
     printf("\n");
 }

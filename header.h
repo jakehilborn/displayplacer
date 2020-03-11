@@ -56,6 +56,7 @@ typedef struct
     int height;                              //pixels tall
     int hz;                                  //refresh rate
     int depth;                               //color depth
+    int enabled;                             //enabled
     bool scaled;                             //scaling
     int x;                                   //origin x position
     int y;                                   //origin y position
