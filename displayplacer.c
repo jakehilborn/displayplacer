@@ -139,6 +139,18 @@ int main(int argc, char* argv[]) {
             continue;
         }
 
+        CGDirectDisplayID curScreen = -1;
+        for (int j = 0; j < screenCount; ++j) {
+            if (screenList[j] == screenConfigs[i].id) {
+                curScreen = screenList[j];
+                break;
+            }
+        }
+        if (curScreen == -1) {
+            isSuccess = false;
+            continue;
+        }
+
         if (CGDisplayRotation(screenConfigs[i].id) != screenConfigs[i].degree) {
             isSuccess = rotateScreen(screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].degree) && isSuccess;
         }
@@ -158,7 +170,11 @@ int main(int argc, char* argv[]) {
         }
 
         isSuccess = configureResolution(configRef, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].width, screenConfigs[i].height, screenConfigs[i].hz, screenConfigs[i].depth, screenConfigs[i].scaled, screenConfigs[i].modeNum) && isSuccess;
-        isSuccess = configureOrigin(configRef, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].x, screenConfigs[i].y) && isSuccess;
+
+        CGPoint curOrigin = CGDisplayBounds(curScreen).origin;
+        if (screenConfigs[i].x != (int) curOrigin.x || screenConfigs[i].y != (int) curOrigin.y) {
+            isSuccess = configureOrigin(configRef, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].x, screenConfigs[i].y) && isSuccess;
+        }
     }
 
     int retVal = CGCompleteDisplayConfiguration(configRef, kCGConfigurePermanently);
