@@ -26,14 +26,14 @@ int main(int argc, char* argv[]) {
     }
 
     ScreenConfig* screenConfigs = malloc((argc - 1) * sizeof(ScreenConfig));
-    
+
     for (int i = 0; i < argc - 1; i++) {
         screenConfigs[i].depth = 0; //overwrite garbage in memory for optional params
         screenConfigs[i].hz = 0;
         screenConfigs[i].modeNum = -1; //set modeNum -1 in case user wants to set and use mode 0
 
         char* propGroup = argv[i + 1];
-        
+
         char* propSetSavePtr = NULL;
         char* propSetToken = strtok_r(propGroup, " \t", &propSetSavePtr);
         while (propSetToken) {
@@ -61,7 +61,7 @@ int main(int argc, char* argv[]) {
                     break;
                 case 'r': //res
                     propToken = strtok_r(NULL, ":", &propSavePtr);
-                    
+
                     char* resSavePtr = NULL;
                     char* resToken = strtok_r(propToken, "x", &resSavePtr);
                     screenConfigs[i].width = atoi(resToken);
@@ -93,7 +93,7 @@ int main(int argc, char* argv[]) {
                     } else {
                         screenConfigs[i].scaled = false;
                     }
-                
+
                     break;
                 case 'o': //origin
                     propToken = strtok_r(NULL, ":", &propSavePtr);
@@ -128,6 +128,16 @@ int main(int argc, char* argv[]) {
     CGGetOnlineDisplayList(INT_MAX, NULL, &screenCount); //get number of online screens and store in screenCount
     CGDirectDisplayID screenList[screenCount];
     CGGetOnlineDisplayList(INT_MAX, screenList, &screenCount); //store display list in array of size screenCount
+
+    // If there is only one screen and no screen id was provided, don't require
+    // a screen id and instead default to the only available screen id
+    if (screenCount == 1 && screenConfigs[0].uuid[0] == '\0')
+    {
+        char curScreenUUID[UUID_SIZE];
+        CFStringGetCString(CFUUIDCreateString(kCFAllocatorDefault, CGDisplayCreateUUIDFromDisplayID(screenList[0])), curScreenUUID, sizeof(curScreenUUID), kCFStringEncodingUTF8);
+
+        strlcpy(screenConfigs[0].uuid, curScreenUUID, sizeof(screenConfigs[0].uuid));
+    }
 
     CGDisplayConfigRef configRef;
     CGBeginDisplayConfiguration(&configRef);
