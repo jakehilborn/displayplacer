@@ -1,0 +1,10 @@
+[conf]
+act-home = ../
+
+[act]
+displayplacer --version
+
+[assert]
+exit-code == 0
+stderr empty
+stdout matches '^displayplacer v'

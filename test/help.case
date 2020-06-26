@@ -1,0 +1,10 @@
+[conf]
+act-home = ../
+
+[act]
+displayplacer --help
+
+[assert]
+exit-code == 0
+stdout equals -file displayplacer-help.txt
+stderr empty

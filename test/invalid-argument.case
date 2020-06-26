@@ -1,0 +1,12 @@
+[conf]
+act-home = ../
+
+[act]
+displayplacer a
+
+[assert]
+exit-code == 1
+stdout empty
+stderr equals <<EOF
+Argument parsing error
+EOF
