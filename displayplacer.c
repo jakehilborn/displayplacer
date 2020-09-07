@@ -1,12 +1,16 @@
 //  displayplacer.c
 //  Created by Jake Hilborn on 5/16/15.
 
-#include <IOKit/graphics/IOGraphicsLib.h>
-#include <ApplicationServices/ApplicationServices.h>
-#include <unistd.h>
 #include <math.h>
 #include <stdio.h>
+#include <unistd.h>
+#include <IOKit/graphics/IOGraphicsLib.h>
+#include <ApplicationServices/ApplicationServices.h>
 #include "header.h"
+
+const int MODE_UNSPECIFIED = -1;
+const int SCREEN_OFFLINE = -2;
+const int MIRROR_SECONDARY = -3;
 
 int main(int argc, char* argv[]) {
     if (argc == 1 || strcmp(argv[1], "--help") == 0) {
@@ -30,7 +34,7 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < argc - 1; i++) {
         screenConfigs[i].depth = 0; //overwrite garbage in memory for optional params
         screenConfigs[i].hz = 0;
-        screenConfigs[i].modeNum = -1; //set modeNum -1 in case user wants to set and use mode 0
+        screenConfigs[i].modeNum = MODE_UNSPECIFIED;
 
         char* propGroup = argv[i + 1];
         
@@ -124,57 +128,74 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    CGDisplayCount screenCount;
-    CGGetOnlineDisplayList(INT_MAX, NULL, &screenCount); //get number of online screens and store in screenCount
-    CGDirectDisplayID screenList[screenCount];
-    CGGetOnlineDisplayList(INT_MAX, screenList, &screenCount); //store display list in array of size screenCount
+    bool isSuccess = true;
 
     CGDisplayConfigRef configRef;
-    CGBeginDisplayConfiguration(&configRef);
-    bool isSuccess = true; //returns non-zero exit code on any errors but allows for completing remaining program execution
+    CGBeginDisplayConfiguration(&configRef); //begin display configuration set transaction
+
+    //check if screen IDs passed in by user are online
     for (int i = 0; i < argc - 1; i++) {
         screenConfigs[i].id = convertUUIDtoID(screenConfigs[i].uuid);
-        if (!validateScreenOnline(screenList, screenCount, screenConfigs[i].id, screenConfigs[i].uuid)) {
+        if (!validateScreenOnline(screenConfigs[i].id, screenConfigs[i].uuid)) {
+            screenConfigs[i].id = SCREEN_OFFLINE;
             isSuccess = false;
+        }
+    }
+
+    //rotate screens first since mirroring and resolution sets are dependent on orientation
+    for (int i = 0; i < argc - 1; i++) {
+        if (screenConfigs[i].id == SCREEN_OFFLINE) {
             continue;
         }
 
         if (CGDisplayRotation(screenConfigs[i].id) != screenConfigs[i].degree) {
             isSuccess = rotateScreen(screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].degree) && isSuccess;
         }
+    }
+
+    //create mirroring sets since resolutions are dependent on which screens are primary in their sets
+    for (int i = 0; i < argc - 1; i++) {
+        if (screenConfigs[i].id == SCREEN_OFFLINE) {
+            continue;
+        }
 
         for (int j = 0; j < screenConfigs[i].mirrorCount; j++) {
             screenConfigs[i].mirrors[j] = convertUUIDtoID(screenConfigs[i].mirrorUUIDs[j]);
-            if (!validateScreenOnline(screenList, screenCount, screenConfigs[i].mirrors[j], screenConfigs[i].mirrorUUIDs[j])) {
+            if (!validateScreenOnline(screenConfigs[i].mirrors[j], screenConfigs[i].mirrorUUIDs[j])) {
                 isSuccess = false;
                 continue;
             }
 
-            if (CGDisplayRotation(screenConfigs[i].mirrors[j]) != screenConfigs[i].degree) {
-                isSuccess = rotateScreen(screenConfigs[i].mirrors[j], screenConfigs[i].mirrorUUIDs[j], screenConfigs[i].degree) && isSuccess;
-            }
-
             isSuccess = configureMirror(configRef, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].mirrors[j], screenConfigs[i].mirrorUUIDs[j]) && isSuccess;
+        }
+    }
+
+    //set resolutions now since the multi-monitor layout is dependent on correct resolutions given that display borders must touch
+    for (int i = 0; i < argc - 1; i++) {
+        if (screenConfigs[i].id == SCREEN_OFFLINE) {
+            continue;
         }
 
         isSuccess = configureResolution(configRef, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].width, screenConfigs[i].height, screenConfigs[i].hz, screenConfigs[i].depth, screenConfigs[i].scaled, screenConfigs[i].modeNum) && isSuccess;
+    }
+
+    //set each screen origin to build the multi-monitor layout
+    for (int i = 0; i < argc - 1; i++) {
+        if (screenConfigs[i].id == SCREEN_OFFLINE) {
+            continue;
+        }
+
         isSuccess = configureOrigin(configRef, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].x, screenConfigs[i].y) && isSuccess;
     }
 
-    int retVal = CGCompleteDisplayConfiguration(configRef, kCGConfigurePermanently);
-
-    if (retVal != 0) {
+    if (CGCompleteDisplayConfiguration(configRef, kCGConfigurePermanently) != 0) {
         fprintf(stderr, "Error finalizing display configurations\n");
         isSuccess = false;
     }
 
     free(screenConfigs);
 
-    if (isSuccess) {
-        return 0;
-    } else {
-        return 1;
-    }
+    return !isSuccess;
 }
 
 void printHelp() {
@@ -324,6 +345,7 @@ void printCurrentProfile() {
         if (CGDisplayIsInMirrorSet(screenConfigs[i].id) && CGDisplayMirrorsDisplay(screenConfigs[i].id) != 0) { //this screen is a secondary screen in a mirroring set
             int primaryScreenId = CGDisplayMirrorsDisplay(screenConfigs[i].id);
             int secondaryScreenId = screenConfigs[i].id;
+            screenConfigs[i].id = MIRROR_SECONDARY;
 
             for (int j = 0; j < screenCount; j++) {
                 if (screenConfigs[j].id == primaryScreenId) {
@@ -331,8 +353,6 @@ void printCurrentProfile() {
                     screenConfigs[j].mirrorCount++;
                 }
             }
-
-            screenConfigs[i].id = -1;
         }
     }
 
@@ -341,7 +361,7 @@ void printCurrentProfile() {
     for (int i = 0; i < screenCount; i++) {
         ScreenConfig curScreen = screenConfigs[i];
 
-        if (curScreen.id == -1) { //earlier we set this to -1 since it will be represented as a mirror on output
+        if (curScreen.id == MIRROR_SECONDARY) { //earlier we set this to MIRROR_SECONDARY since it will be represented as a mirror on output
             continue;
         }
 
@@ -386,9 +406,14 @@ CGDirectDisplayID convertUUIDtoID(char* uuid) {
     return CGDisplayGetDisplayIDFromUUID(uuidRef);
 }
 
-bool validateScreenOnline(CGDirectDisplayID onlineDisplayList[], int screenCount, CGDirectDisplayID screenId, char* screenUUID) {
+bool validateScreenOnline(CGDirectDisplayID screenId, char* screenUUID) {
+    CGDisplayCount screenCount;
+    CGGetOnlineDisplayList(INT_MAX, NULL, &screenCount); //get number of online screens and store in screenCount
+    CGDirectDisplayID screenList[screenCount];
+    CGGetOnlineDisplayList(INT_MAX, screenList, &screenCount); //store display list in array of size screenCount
+
     for (int i = 0; i < screenCount; i++) {
-        if (onlineDisplayList[i] == screenId) {
+        if (screenList[i] == screenId) {
             return true;
         }
     }
@@ -416,34 +441,61 @@ bool rotateScreen(CGDirectDisplayID screenId, char* screenUUID, int degree) {
             break;
     }
 
-    int retVal = IOServiceRequestProbe(service, options);
-
-    if (retVal != 0) {
+    if (IOServiceRequestProbe(service, options) != 0) {
         fprintf(stderr, "Error rotating screen %s\n", screenUUID);
         return false;
     }
 
-    return true;
+    unsigned long beginTime = time(NULL);
+    while (time(NULL) - beginTime < 10) { //wait up to 10 seconds for rotation change to complete
+        if (CGDisplayRotation(screenId) == degree) {
+            return true;
+        }
+    }
+
+    fprintf(stderr, "Error rotating screen %s, did not complete within 10 seconds.\n", screenUUID);
+    return false;
 }
 
 bool configureMirror(CGDisplayConfigRef configRef, CGDirectDisplayID primaryScreenId, char* primaryScreenUUID, CGDirectDisplayID mirrorScreenId, char* mirrorScreenUUID) {
-    int retVal = CGConfigureDisplayMirrorOfDisplay(configRef, mirrorScreenId, primaryScreenId);
-
-    if (retVal != 0) {
+    if (CGConfigureDisplayMirrorOfDisplay(configRef, mirrorScreenId, primaryScreenId) != 0) {
         fprintf(stderr, "Error making the secondary screen %s mirror the primary screen %s\n", mirrorScreenUUID, primaryScreenUUID);
         return false;
     }
 
-    return true;
+    unsigned long beginTime = time(NULL);
+    while (time(NULL) - beginTime < 10) { //wait up to 10 seconds for rotation change to complete
+        if (CGDisplayMirrorsDisplay(mirrorScreenId) == primaryScreenId) {
+            return true;
+        }
+        printf("waiting for configureMirror %lu\n", time(NULL) - beginTime);
+    }
+
+    fprintf(stderr, "Error making the secondary screen %s mirror the primary screen %s\n, did not complete within 10 seconds", mirrorScreenUUID, primaryScreenUUID);
+    return false;
 }
 
 bool configureResolution(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, char* screenUUID, int width, int height, int hz, int depth, bool scaled, int modeNum) {
     int modeCount;
     modes_D4* modes;
 
-    if (modeNum != -1) { //user specified modeNum instead of height/width/hz
+    if (modeNum != MODE_UNSPECIFIED) { //user specified modeNum instead of height/width/hz
         CGSConfigureDisplayMode(configRef, screenId, modeNum);
-        return true;
+
+        printf("setting via mode\n");
+
+        unsigned long beginTime = time(NULL);
+        while (time(NULL) - beginTime < 10) { //wait up to 10 seconds for rotation change to complete
+            int newModeNum;
+            CGSGetCurrentDisplayMode(screenId, &newModeNum);
+            if (newModeNum == modeNum) {
+                return true;
+            }
+        }
+
+        // fprintf(stderr, "Error rotating screen %s, did not complete within 10 seconds.\n", screenUUID);
+        fprintf(stderr, "Error setting modeNum");
+        return false;
     }
 
     CopyAllDisplayModes(screenId, &modes, &modeCount);
@@ -493,9 +545,7 @@ bool configureResolution(CGDisplayConfigRef configRef, CGDirectDisplayID screenI
 }
 
 bool configureOrigin(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, char* screenUUID, int x, int y) {
-    int retVal = CGConfigureDisplayOrigin(configRef, screenId, x, y);
-
-    if (retVal != 0) {
+    if (CGConfigureDisplayOrigin(configRef, screenId, x, y) != 0) {
         fprintf(stderr, "Error moving screen %s to %ix%i\n", screenUUID, x, y);
         return false;
     }
