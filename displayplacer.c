@@ -130,9 +130,6 @@ int main(int argc, char* argv[]) {
 
     bool isSuccess = true;
 
-    CGDisplayConfigRef configRef;
-    CGBeginDisplayConfiguration(&configRef); //begin display configuration set transaction
-
     //check if screen IDs passed in by user are online
     for (int i = 0; i < argc - 1; i++) {
         screenConfigs[i].id = convertUUIDtoID(screenConfigs[i].uuid);
@@ -162,11 +159,12 @@ int main(int argc, char* argv[]) {
         for (int j = 0; j < screenConfigs[i].mirrorCount; j++) {
             screenConfigs[i].mirrors[j] = convertUUIDtoID(screenConfigs[i].mirrorUUIDs[j]);
             if (!validateScreenOnline(screenConfigs[i].mirrors[j], screenConfigs[i].mirrorUUIDs[j])) {
+                //TEST WHAT HAPPENS WHEN SCREEN IS OFFLINE WITHOUT BEING IN A CG TRANSACTION!!!!!!!
                 isSuccess = false;
                 continue;
             }
 
-            isSuccess = configureMirror(configRef, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].mirrors[j], screenConfigs[i].mirrorUUIDs[j]) && isSuccess;
+            isSuccess = configureMirror(screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].mirrors[j], screenConfigs[i].mirrorUUIDs[j]) && isSuccess;
         }
     }
 
@@ -176,7 +174,7 @@ int main(int argc, char* argv[]) {
             continue;
         }
 
-        isSuccess = configureResolution(configRef, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].width, screenConfigs[i].height, screenConfigs[i].hz, screenConfigs[i].depth, screenConfigs[i].scaled, screenConfigs[i].modeNum) && isSuccess;
+        isSuccess = configureResolution(screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].width, screenConfigs[i].height, screenConfigs[i].hz, screenConfigs[i].depth, screenConfigs[i].scaled, screenConfigs[i].modeNum) && isSuccess;
     }
 
     //set each screen origin to build the multi-monitor layout
@@ -185,12 +183,7 @@ int main(int argc, char* argv[]) {
             continue;
         }
 
-        isSuccess = configureOrigin(configRef, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].x, screenConfigs[i].y) && isSuccess;
-    }
-
-    if (CGCompleteDisplayConfiguration(configRef, kCGConfigurePermanently) != 0) {
-        fprintf(stderr, "Error finalizing display configurations\n");
-        isSuccess = false;
+        isSuccess = configureOrigin(screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].x, screenConfigs[i].y) && isSuccess;
     }
 
     free(screenConfigs);
@@ -403,6 +396,7 @@ CGDirectDisplayID convertUUIDtoID(char* uuid) {
 
     CFStringRef uuidStringRef = CFStringCreateWithCString(kCFAllocatorDefault, uuid, kCFStringEncodingUTF8);
     CFUUIDRef uuidRef = CFUUIDCreateFromString(kCFAllocatorDefault, uuidStringRef);
+    CGGetOnlineDisplayList(INT_MAX, NULL, NULL); //for some reason calling this fixes an initialization error regarding CGS_REQUIRE_INIT for the CGDisplayGetDisplayIDFromUUID call
     return CGDisplayGetDisplayIDFromUUID(uuidRef);
 }
 
@@ -446,58 +440,88 @@ bool rotateScreen(CGDirectDisplayID screenId, char* screenUUID, int degree) {
         return false;
     }
 
+    int waitSeconds = 10;
     unsigned long beginTime = time(NULL);
-    while (time(NULL) - beginTime < 10) { //wait up to 10 seconds for rotation change to complete
+    unsigned long secondsElapsed = 0;
+    while (time(NULL) - beginTime < waitSeconds) {
         if (CGDisplayRotation(screenId) == degree) {
             return true;
         }
+        if (time(NULL) - beginTime > secondsElapsed) {
+            secondsElapsed = time(NULL) - beginTime;
+            printf("Waited %lu of %i seconds for %s to complete rotating.\n", secondsElapsed, waitSeconds, screenUUID);
+        }
     }
 
-    fprintf(stderr, "Error rotating screen %s, did not complete within 10 seconds.\n", screenUUID);
+    fprintf(stderr, "Error rotating screen %s, did not complete within %i seconds.\n", screenUUID, waitSeconds);
     return false;
 }
 
-bool configureMirror(CGDisplayConfigRef configRef, CGDirectDisplayID primaryScreenId, char* primaryScreenUUID, CGDirectDisplayID mirrorScreenId, char* mirrorScreenUUID) {
+bool configureMirror(CGDirectDisplayID primaryScreenId, char* primaryScreenUUID, CGDirectDisplayID mirrorScreenId, char* mirrorScreenUUID) {
+    CGDisplayConfigRef configRef;
+    CGBeginDisplayConfiguration(&configRef);
+
     if (CGConfigureDisplayMirrorOfDisplay(configRef, mirrorScreenId, primaryScreenId) != 0) {
         fprintf(stderr, "Error making the secondary screen %s mirror the primary screen %s\n", mirrorScreenUUID, primaryScreenUUID);
         return false;
     }
 
+    if (CGCompleteDisplayConfiguration(configRef, kCGConfigurePermanently) != 0) {
+        fprintf(stderr, "Error completing display configuration making the secondary screen %s mirror the primary screen %s\n", mirrorScreenUUID, primaryScreenUUID);
+        return false;
+    }
+
+    int waitSeconds = 10;
     unsigned long beginTime = time(NULL);
-    while (time(NULL) - beginTime < 10) { //wait up to 10 seconds for rotation change to complete
+    unsigned long secondsElapsed = 0;
+    while (time(NULL) - beginTime < waitSeconds) {
         if (CGDisplayMirrorsDisplay(mirrorScreenId) == primaryScreenId) {
             return true;
         }
-        printf("waiting for configureMirror %lu\n", time(NULL) - beginTime);
+        if (time(NULL) - beginTime > secondsElapsed) {
+            secondsElapsed = time(NULL) - beginTime;
+            printf("Waited %lu of %i seconds for the secondary screen %s to mirror the primary screen %s.\n", secondsElapsed, waitSeconds, mirrorScreenUUID, primaryScreenUUID);
+        }
     }
 
-    fprintf(stderr, "Error making the secondary screen %s mirror the primary screen %s\n, did not complete within 10 seconds", mirrorScreenUUID, primaryScreenUUID);
+    fprintf(stderr, "Error making the secondary screen %s mirror the primary screen %s, did not complete within %i seconds\n", mirrorScreenUUID, primaryScreenUUID, waitSeconds);
     return false;
 }
 
-bool configureResolution(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, char* screenUUID, int width, int height, int hz, int depth, bool scaled, int modeNum) {
-    int modeCount;
-    modes_D4* modes;
+bool configureResolution(CGDirectDisplayID screenId, char* screenUUID, int width, int height, int hz, int depth, bool scaled, int modeNum) {
+    CGDisplayConfigRef configRef;
+    CGBeginDisplayConfiguration(&configRef); //what happens when we return false and never end this display configuration?
 
     if (modeNum != MODE_UNSPECIFIED) { //user specified modeNum instead of height/width/hz
         CGSConfigureDisplayMode(configRef, screenId, modeNum);
 
-        printf("setting via mode\n");
+        if (CGCompleteDisplayConfiguration(configRef, kCGConfigurePermanently) != 0) {
+            fprintf(stderr, "Error completing display configuration applying mode %i to screen %s.\n", modeNum, screenUUID);
+            return false;
+        }
 
+        int waitSeconds = 10;
         unsigned long beginTime = time(NULL);
-        while (time(NULL) - beginTime < 10) { //wait up to 10 seconds for rotation change to complete
+        unsigned long secondsElapsed = 0;
+        while (time(NULL) - beginTime < waitSeconds) {
             int newModeNum;
             CGSGetCurrentDisplayMode(screenId, &newModeNum);
             if (newModeNum == modeNum) {
                 return true;
             }
+
+            if (time(NULL) - beginTime > secondsElapsed) {
+                secondsElapsed = time(NULL) - beginTime;
+                printf("Waited %lu of %i seconds for screen %s to apply mode %i.\n", secondsElapsed, waitSeconds, screenUUID, modeNum);
+            }
         }
 
-        // fprintf(stderr, "Error rotating screen %s, did not complete within 10 seconds.\n", screenUUID);
-        fprintf(stderr, "Error setting modeNum");
+        fprintf(stderr, "Error applying mode %i to screen %s, did not complete within %i seconds", modeNum, screenUUID, waitSeconds);
         return false;
     }
 
+    int modeCount;
+    modes_D4* modes;
     CopyAllDisplayModes(screenId, &modes, &modeCount);
 
     modes_D4 bestMode = modes[0];
@@ -526,7 +550,30 @@ bool configureResolution(CGDisplayConfigRef configRef, CGDirectDisplayID screenI
 
     if (modeFound) {
         CGSConfigureDisplayMode(configRef, screenId, bestMode.derived.mode);
-        return true;
+
+        if (CGCompleteDisplayConfiguration(configRef, kCGConfigurePermanently) != 0) {
+            fprintf(stderr, "Error applying mode %i to screen %s.\n", bestMode.derived.mode, screenUUID);
+            return false;
+        }
+
+        int waitSeconds = 10;
+        unsigned long beginTime = time(NULL);
+        unsigned long secondsElapsed = 0;
+        while (time(NULL) - beginTime < waitSeconds) {
+            int newModeNum;
+            CGSGetCurrentDisplayMode(screenId, &newModeNum);
+            if (newModeNum == bestMode.derived.mode) {
+                return true;
+            }
+
+            if (time(NULL) - beginTime > secondsElapsed) {
+                secondsElapsed = time(NULL) - beginTime;
+                printf("Waited %lu of %i seconds for screen %s to apply mode %i.\n", secondsElapsed, waitSeconds, screenUUID, bestMode.derived.mode);
+            }
+        }
+
+        fprintf(stderr, "Error applying mode %i to screen %s, did not complete within %i seconds", bestMode.derived.mode, screenUUID, waitSeconds);
+        return false;
     }
 
     fprintf(stderr, "Screen ID %s: could not find res:%ix%i", screenUUID, width, height);
@@ -544,11 +591,33 @@ bool configureResolution(CGDisplayConfigRef configRef, CGDirectDisplayID screenI
     return false;
 }
 
-bool configureOrigin(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, char* screenUUID, int x, int y) {
+bool configureOrigin(CGDirectDisplayID screenId, char* screenUUID, int x, int y) {
+    CGDisplayConfigRef configRef;
+    CGBeginDisplayConfiguration(&configRef);
+
     if (CGConfigureDisplayOrigin(configRef, screenId, x, y) != 0) {
         fprintf(stderr, "Error moving screen %s to %ix%i\n", screenUUID, x, y);
         return false;
     }
 
-    return true;
+    if (CGCompleteDisplayConfiguration(configRef, kCGConfigurePermanently) != 0) {
+        fprintf(stderr, "Error completing display configuration moving screen %s to %ix%i\n", screenUUID, x, y);
+        return false;
+    }
+
+    int waitSeconds = 10;
+    unsigned long beginTime = time(NULL);
+    unsigned long secondsElapsed = 0;
+    while (time(NULL) - beginTime < waitSeconds) {
+        if ((int) CGDisplayBounds(screenId).origin.x == x && (int) CGDisplayBounds(screenId).origin.y == y) {
+            return true;
+        }
+        if (time(NULL) - beginTime > secondsElapsed) {
+            secondsElapsed = time(NULL) - beginTime;
+            printf("Waited %lu of %i seconds for screen %s to move to %ix%i.\n", secondsElapsed, waitSeconds, screenUUID, x, y);
+        }
+    }
+
+    fprintf(stderr, "Error moving screen %s to %ix%i, did not complete within %i seconds\n", screenUUID, x, y, waitSeconds);
+    return false;
 }
