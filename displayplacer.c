@@ -412,11 +412,12 @@ bool validateScreenOnline(CGDirectDisplayID screenId, char* screenUUID) {
         }
     }
 
-    fprintf(stderr, "Unable to find screen %s - skipping changes for that screen\n", screenUUID);
+    fprintf(stderr, "Unable to find screen %s - skipping changes for that screen.\n", screenUUID);
     return false;
 }
 
 bool rotateScreen(CGDirectDisplayID screenId, char* screenUUID, int degree) {
+    printf("rotating screen %s, %lu\n", screenUUID, time(NULL));
     io_service_t service = CGDisplayIOServicePort(screenId);
     IOOptionBits options;
 
@@ -458,6 +459,7 @@ bool rotateScreen(CGDirectDisplayID screenId, char* screenUUID, int degree) {
 }
 
 bool configureMirror(CGDirectDisplayID primaryScreenId, char* primaryScreenUUID, CGDirectDisplayID mirrorScreenId, char* mirrorScreenUUID) {
+    printf("configureMirror primary %s, secondary %s, %lu\n", primaryScreenUUID, mirrorScreenUUID, time(NULL));
     CGDisplayConfigRef configRef;
     CGBeginDisplayConfiguration(&configRef);
 
@@ -489,6 +491,7 @@ bool configureMirror(CGDirectDisplayID primaryScreenId, char* primaryScreenUUID,
 }
 
 bool configureResolution(CGDirectDisplayID screenId, char* screenUUID, int width, int height, int hz, int depth, bool scaled, int modeNum) {
+    printf("configureResolution %s, %lu\n", screenUUID, time(NULL));
     CGDisplayConfigRef configRef;
     CGBeginDisplayConfiguration(&configRef); //what happens when we return false and never end this display configuration?
 
@@ -592,18 +595,23 @@ bool configureResolution(CGDirectDisplayID screenId, char* screenUUID, int width
 }
 
 bool configureOrigin(CGDirectDisplayID screenId, char* screenUUID, int x, int y) {
+    printf("configureOrigin %s\n", screenUUID);
     CGDisplayConfigRef configRef;
     CGBeginDisplayConfiguration(&configRef);
 
+    printf("before call origin configure\n");
     if (CGConfigureDisplayOrigin(configRef, screenId, x, y) != 0) {
         fprintf(stderr, "Error moving screen %s to %ix%i\n", screenUUID, x, y);
         return false;
     }
+    printf("after call origin configure\n");
 
+    printf("before call origin complete, %lu\n", time(NULL));
     if (CGCompleteDisplayConfiguration(configRef, kCGConfigurePermanently) != 0) {
         fprintf(stderr, "Error completing display configuration moving screen %s to %ix%i\n", screenUUID, x, y);
         return false;
     }
+    printf("after call origin complete, %lu\n", time(NULL));
 
     int waitSeconds = 10;
     unsigned long beginTime = time(NULL);
