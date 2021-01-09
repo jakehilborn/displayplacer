@@ -419,7 +419,7 @@ bool rotateScreen(CGDirectDisplayID screenId, char* screenUUID, int degree) {
     int retVal = IOServiceRequestProbe(service, options);
 
     if (retVal != 0) {
-        fprintf(stderr, "Error rotating screen %s\n", screenUUID);
+        fprintf(stderr, "Error rotating screen %s: %s, code: 0x%x\n", screenUUID, mach_error_string(retVal), retVal);
         return false;
     }
 
