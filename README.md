@@ -34,6 +34,7 @@ Example w/ all features: `displayplacer "id:18173D22-3EC6-E735-EEB4-B003BF681F30
 - The first screenId in a mirroring set will be the 'Optimize for' screen in the system prefs. You can only choose resolutions for the 'Optimize for' screen. If there is a mirroring resolution you need but cannot find, try making a different screenId the first of the set.
 - hz and color_depth are optional. If left out, the highest hz and then the highest color_depth will be auto applied.
 - Persistent screen ids always stay the same. Contextual screen ids change when switching GPUs or when switching ports. It's recommended to use persistent screen ids. In some rare cases, you may need to use contextual screen ids since the modes list changes when macOS switches GPUs.
+- The macOS system API <a href="https://developer.apple.com/documentation/coregraphics/1454488-cgcompletedisplayconfiguration" target="_blank">CGCompleteDisplayConfiguration</a> can take up to 10 seconds to complete. If you're running displayplacer through some other program that is timing out then I recommend running the process in the background with an ampersand (&). `displayplacer "id:<built-in permanent ID> mode:150" &`
 
 #### Feedback:
 Please create a GitHub Issue for any feedback, feature requests, bugs, Homebrew issues, etc. Happy to accept pull requests too!
