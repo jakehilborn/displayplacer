@@ -156,7 +156,7 @@ int main(int argc, char *argv[])
         screenConfigs[i].id = convertUUIDtoID(screenConfigs[i].uuid);
         if (!validateScreenOnline(screenList, screenCount, screenConfigs[i].id, screenConfigs[i].uuid))
         {
-            isSuccess = false;
+            isSuccess = ignoreMissingScreens; // if ignoreMissingScreens is true then dont return error on completion
             continue;
         }
 
@@ -218,9 +218,9 @@ void printHelp()
         "\n"
         "    Apply screen config with mirrored screens: displayplacer \"id:<mainScreenId>+<1stMirrorScreenId>+<2ndMirrorScreenId> res:<width>x<height> scaling:<on/off> origin:(<x>,<y>) degree:<0/90/180/270>\"\n"
         "\n"
-        "    Add 'q' to surpress the error when a screen isn't found. Allows you to have one command line for multiple setups."
+        "    Add 'quiet' to surpress the error when a screen isn't found. Allows you to have one command line for multiple setups."
         "\n"
-        "    Example w/ all features: displayplacer q \"id:18173D22-3EC6-E735-EEB4-B003BF681F30+F466F621-B5FA-04A0-0800-CFA6C258DECD res:1440x900 scaling:on origin:(0,0) degree:0\" \"id:4C405A05-8798-553B-3550-F93E7A7722BB res:768x1360 hz:60 color_depth:8 scaling:off origin:(1440,0) degree:90\" \"id:A46D2F5E-487B-CC69-C588-ECFD519016E5 mode:3 origin:(-1440,0) degree:270\"\n"
+        "    Example w/ all features: displayplacer quiet \"id:18173D22-3EC6-E735-EEB4-B003BF681F30+F466F621-B5FA-04A0-0800-CFA6C258DECD res:1440x900 scaling:on origin:(0,0) degree:0\" \"id:4C405A05-8798-553B-3550-F93E7A7722BB res:768x1360 hz:60 color_depth:8 scaling:off origin:(1440,0) degree:90\" \"id:A46D2F5E-487B-CC69-C588-ECFD519016E5 mode:3 origin:(-1440,0) degree:270\"\n"
         "\n"
         "Instructions:\n"
         "    1. Manually set rotations 1st*, resolutions 2nd, and arrangement 3rd. For extra resolutions and rotations read 'Notes' below.\n"
@@ -454,15 +454,12 @@ bool validateScreenOnline(CGDirectDisplayID onlineDisplayList[], int screenCount
         }
     }
 
-    if (ignoreMissingScreens)
-    {
-        return true;
-    }
-    else
+    if (!ignoreMissingScreens) // skip alerting if ignoring missing screens
     {
         fprintf(stderr, "Unable to find screen %s - skipping changes for that screen\n", screenUUID);
-        return false;
     }
+        return false;
+
 }
 
 bool rotateScreen(CGDirectDisplayID screenId, char *screenUUID, int degree)
@@ -488,7 +485,7 @@ bool rotateScreen(CGDirectDisplayID screenId, char *screenUUID, int degree)
 
     int retVal = IOServiceRequestProbe(service, options);
 
-    if (retVal != 0 && !ignoreMissingScreens)
+    if (retVal != 0)
     {
         fprintf(stderr, "Error rotating screen %s\n", screenUUID);
         return false;
@@ -501,7 +498,7 @@ bool configureMirror(CGDisplayConfigRef configRef, CGDirectDisplayID primaryScre
 {
     int retVal = CGConfigureDisplayMirrorOfDisplay(configRef, mirrorScreenId, primaryScreenId);
 
-    if (retVal != 0 && !ignoreMissingScreens)
+    if (retVal != 0)
     {
         fprintf(stderr, "Error making the secondary screen %s mirror the primary screen %s\n", mirrorScreenUUID, primaryScreenUUID);
         return false;
@@ -563,9 +560,6 @@ bool configureResolution(CGDisplayConfigRef configRef, CGDirectDisplayID screenI
         return true;
     }
 
-    if (ignoreMissingScreens) {
-        return true;
-    }
 
     fprintf(stderr, "Screen ID %s: could not find res:%ix%i", screenUUID, width, height);
     if (hz)
@@ -588,7 +582,7 @@ bool configureOrigin(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, c
 {
     int retVal = CGConfigureDisplayOrigin(configRef, screenId, x, y);
 
-    if (retVal != 0 && !ignoreMissingScreens)
+    if (retVal != 0 )
     {
         fprintf(stderr, "Error moving screen %s to %ix%i\n", screenUUID, x, y);
         return false;
