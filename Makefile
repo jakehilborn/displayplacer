@@ -41,7 +41,7 @@ WARNINGS += -Wshadow-uncaptured-local
 WARNINGS += -Wformat
 WARNINGS += -Wlogical-not-parentheses
 WARNINGS += -Wnull-dereference
-WARNINGS += -Wextra #TODO enable after fixing these warnings
+#WARNINGS += -Wextra #TODO enable after fixing these warnings
 
 INSTALL ?= install
 INSTALL_PROGRAM ?= $(INSTALL)
@@ -51,7 +51,7 @@ INSTALL_DATA ?= $(INSTALL) -m 644
 all: displayplacer
 
 displayplacer: displayplacer.c header.h
-	$(CC) -I. $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) -o $@ $< -framework IOKit -framework ApplicationServices -Wno-deprecated-declarations
+	$(CC) -I. $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) -o $@ $< -framework IOKit -framework ApplicationServices $(WARNINGS)
 
 .PHONY: debug
 debug: CFLAGS += -g
