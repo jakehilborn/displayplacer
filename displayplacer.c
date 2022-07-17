@@ -183,8 +183,8 @@ int main(int argc, char* argv[]) {
 
         isSuccess = configureResolution(configRef, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].width, screenConfigs[i].height, screenConfigs[i].hz, screenConfigs[i].depth, screenConfigs[i].scaled, screenConfigs[i].modeNum) && isSuccess;
 
-        CGPoint curOrigin = CGDisplayBounds(curScreen).origin;
-        if (screenConfigs[i].x != (int) curOrigin.x || screenConfigs[i].y != (int) curOrigin.y) {
+        CGPoint curOrigin = CGDisplayBounds(screenConfigs[i].id).origin;
+        if ((int) curOrigin.x != screenConfigs[i].x || (int) curOrigin.y != screenConfigs[i].y) {
             isSuccess = configureOrigin(configRef, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].x, screenConfigs[i].y) && isSuccess;
         }
     }
