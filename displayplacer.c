@@ -7,8 +7,6 @@
 #include <stdio.h>
 #include "header.h"
 
-bool ignoreMissingScreens = false; // should we supress the error when a screen ID can't be found?
-
 int main(int argc, char* argv[]) {
     if (argc == 1 || strcmp(argv[1], "--help") == 0) {
         printHelp();
@@ -32,6 +30,7 @@ int main(int argc, char* argv[]) {
         screenConfigs[i].depth = 0; //overwrite garbage in memory for optional params
         screenConfigs[i].hz = 0;
         screenConfigs[i].enabled = true;
+        screenConfigs[i].quietMissingScreen = false;
         screenConfigs[i].modeNum = -1; //set modeNum -1 in case user wants to set and use mode 0
 
         char* propGroup = argv[i + 1];
@@ -124,8 +123,12 @@ int main(int argc, char* argv[]) {
 
                     screenConfigs[i].degree = atoi(propToken);
                     break;
-                case 'q': // supress error when screen by ID isnt found
-                    ignoreMissingScreens = true;
+                case 'q': //quiet
+                    propToken = strtok_r(NULL, ":", &propSavePtr);
+
+                    if (strcmp(propToken, "true") == 0) {
+                        screenConfigs[i].quietMissingScreen = true;
+                    }
                     break;
                 default:
                     fprintf(stderr, "Argument parsing error\n");
@@ -146,8 +149,10 @@ int main(int argc, char* argv[]) {
     bool isSuccess = true; //returns non-zero exit code on any errors but allows for completing remaining program execution
     for (int i = 0; i < argc - 1; i++) {
         screenConfigs[i].id = convertUUIDtoID(screenConfigs[i].uuid);
-        if (!validateScreenOnline(screenList, screenCount, screenConfigs[i].id, screenConfigs[i].uuid)) {
-            isSuccess = ignoreMissingScreens; // if ignoreMissingScreens is true then dont return error on completion
+        if (!validateScreenOnline(screenList, screenCount, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].quietMissingScreen)) {
+            if (!screenConfigs[i].quietMissingScreen) {
+                isSuccess = false;
+            }
             continue;
         }
 
@@ -163,8 +168,10 @@ int main(int argc, char* argv[]) {
 
         for (int j = 0; j < screenConfigs[i].mirrorCount; j++) {
             screenConfigs[i].mirrors[j] = convertUUIDtoID(screenConfigs[i].mirrorUUIDs[j]);
-            if (!validateScreenOnline(screenList, screenCount, screenConfigs[i].mirrors[j], screenConfigs[i].mirrorUUIDs[j])) {
-                isSuccess = false;
+            if (!validateScreenOnline(screenList, screenCount, screenConfigs[i].mirrors[j], screenConfigs[i].mirrorUUIDs[j], screenConfigs[i].quietMissingScreen)) {
+                if (!screenConfigs[i].quietMissingScreen) {
+                    isSuccess = false;
+                }
                 continue;
             }
 
@@ -424,14 +431,16 @@ CGDirectDisplayID convertUUIDtoID(char* uuid) {
     return CGDisplayGetDisplayIDFromUUID(uuidRef);
 }
 
-bool validateScreenOnline(CGDirectDisplayID onlineDisplayList[], int screenCount, CGDirectDisplayID screenId, char* screenUUID) {
+bool validateScreenOnline(CGDirectDisplayID onlineDisplayList[], int screenCount, CGDirectDisplayID screenId, char* screenUUID, bool quietMissingScreen) {
     for (int i = 0; i < screenCount; i++) {
         if (onlineDisplayList[i] == screenId) {
             return true;
         }
     }
 
-    fprintf(stderr, "Unable to find screen %s - skipping changes for that screen\n", screenUUID);
+    if (!quietMissingScreen) {
+        fprintf(stderr, "Unable to find screen %s - skipping changes for that screen\n", screenUUID);
+    }
     return false;
 }
 
