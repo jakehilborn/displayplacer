@@ -1,4 +1,7 @@
-.DS_Store
-.idea/
 displayplacer
-.vscode
+displayplacer.dSYM/
+
+.DS_Store
+
+.idea/
+.vscode/
