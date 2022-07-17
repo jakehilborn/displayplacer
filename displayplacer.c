@@ -518,7 +518,7 @@ bool configureResolution(CGDisplayConfigRef configRef, CGDirectDisplayID screenI
     if (depth) {
         fprintf(stderr, " color_depth:%i", depth);
     }
-    char* scalingString = (scaled == 2.0) ? "on" : "off";
+    char* scalingString = (scaled) ? "on" : "off";
     fprintf(stderr, " scaling:%s", scalingString);
 
     fprintf(stderr, "\n");
