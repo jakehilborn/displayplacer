@@ -30,10 +30,11 @@ int main(int argc, char* argv[]) {
         screenConfigs[i].depth = 0; //overwrite garbage in memory for optional params
         screenConfigs[i].hz = 0;
         screenConfigs[i].enabled = true;
+        screenConfigs[i].quietMissingScreen = false;
         screenConfigs[i].modeNum = -1; //set modeNum -1 in case user wants to set and use mode 0
 
         char* propGroup = argv[i + 1];
-        
+
         char* propSetSavePtr = NULL;
         char* propSetToken = strtok_r(propGroup, " \t", &propSetSavePtr);
         while (propSetToken) {
@@ -61,7 +62,7 @@ int main(int argc, char* argv[]) {
                     break;
                 case 'r': //res
                     propToken = strtok_r(NULL, ":", &propSavePtr);
-                    
+
                     char* resSavePtr = NULL;
                     char* resToken = strtok_r(propToken, "x", &resSavePtr);
                     screenConfigs[i].width = atoi(resToken);
@@ -104,13 +105,13 @@ int main(int argc, char* argv[]) {
                     break;
                 case 'o': //origin
                     propToken = strtok_r(NULL, ":", &propSavePtr);
-                    
+
                     char* originSavePtr = NULL;
                     char* originToken = strtok_r(propToken, ",", &originSavePtr);
                     screenConfigs[i].x = atoi(originToken + 1); //skip the '(' character
                     originToken = strtok_r(NULL, ",", &originSavePtr);
                     screenConfigs[i].y = atoi(originToken);
-                    
+
                     break;
                 case 'm': //mode
                     propToken = strtok_r(NULL, ":", &propSavePtr);
@@ -122,11 +123,18 @@ int main(int argc, char* argv[]) {
 
                     screenConfigs[i].degree = atoi(propToken);
                     break;
+                case 'q': //quiet
+                    propToken = strtok_r(NULL, ":", &propSavePtr);
+
+                    if (strcmp(propToken, "true") == 0) {
+                        screenConfigs[i].quietMissingScreen = true;
+                    }
+                    break;
                 default:
                     fprintf(stderr, "Argument parsing error\n");
                     exit(1);
             }
-            
+
             propSetToken = strtok_r(NULL, " \t", &propSetSavePtr);
         }
     }
@@ -141,8 +149,10 @@ int main(int argc, char* argv[]) {
     bool isSuccess = true; //returns non-zero exit code on any errors but allows for completing remaining program execution
     for (int i = 0; i < argc - 1; i++) {
         screenConfigs[i].id = convertUUIDtoID(screenConfigs[i].uuid);
-        if (!validateScreenOnline(screenList, screenCount, screenConfigs[i].id, screenConfigs[i].uuid)) {
-            isSuccess = false;
+        if (!validateScreenOnline(screenList, screenCount, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].quietMissingScreen)) {
+            if (!screenConfigs[i].quietMissingScreen) {
+                isSuccess = false;
+            }
             continue;
         }
 
@@ -158,8 +168,10 @@ int main(int argc, char* argv[]) {
 
         for (int j = 0; j < screenConfigs[i].mirrorCount; j++) {
             screenConfigs[i].mirrors[j] = convertUUIDtoID(screenConfigs[i].mirrorUUIDs[j]);
-            if (!validateScreenOnline(screenList, screenCount, screenConfigs[i].mirrors[j], screenConfigs[i].mirrorUUIDs[j])) {
-                isSuccess = false;
+            if (!validateScreenOnline(screenList, screenCount, screenConfigs[i].mirrors[j], screenConfigs[i].mirrorUUIDs[j], screenConfigs[i].quietMissingScreen)) {
+                if (!screenConfigs[i].quietMissingScreen) {
+                    isSuccess = false;
+                }
                 continue;
             }
 
@@ -296,7 +308,7 @@ void listScreens() {
 
         char* enabled = CGDisplayIsActive(curScreen) ? "true" : "false"; //TODO this prints false for secondary screens in mirroring sets that are actually enabled
         printf("Enabled: %s\n", enabled);
-        
+
         int modeCount;
         modes_D4* modes;
         CopyAllDisplayModes(curScreen, &modes, &modeCount);
@@ -397,11 +409,11 @@ void printCurrentProfile() {
         }
 
         printf(" \"id:%s%s res:%ix%i %scolor_depth:%i enabled:true scaling:%s origin:(%i,%i) degree:%i\"",
-            curScreenUUID, mirrors, 
+            curScreenUUID, mirrors,
             (int) CGDisplayPixelsWide(curScreen.id), (int) CGDisplayPixelsHigh(curScreen.id),
-            hz, 
+            hz,
             curMode.derived.depth,
-            scaling, 
+            scaling,
             (int) CGDisplayBounds(curScreen.id).origin.x, (int) CGDisplayBounds(curScreen.id).origin.y,
             (int) CGDisplayRotation(curScreen.id)
         );
@@ -419,14 +431,16 @@ CGDirectDisplayID convertUUIDtoID(char* uuid) {
     return CGDisplayGetDisplayIDFromUUID(uuidRef);
 }
 
-bool validateScreenOnline(CGDirectDisplayID onlineDisplayList[], int screenCount, CGDirectDisplayID screenId, char* screenUUID) {
+bool validateScreenOnline(CGDirectDisplayID onlineDisplayList[], int screenCount, CGDirectDisplayID screenId, char* screenUUID, bool quietMissingScreen) {
     for (int i = 0; i < screenCount; i++) {
         if (onlineDisplayList[i] == screenId) {
             return true;
         }
     }
 
-    fprintf(stderr, "Unable to find screen %s - skipping changes for that screen\n", screenUUID);
+    if (!quietMissingScreen) {
+        fprintf(stderr, "Unable to find screen %s - skipping changes for that screen\n", screenUUID);
+    }
     return false;
 }
 
@@ -487,7 +501,7 @@ bool configureResolution(CGDisplayConfigRef configRef, CGDirectDisplayID screenI
     //loop through all modes looking for one that matches user input params
     for (int i = 0; i < modeCount; i++) {
         modes_D4 curMode = modes[i];
-        
+
         //prioritize exact matches of user input params
         if (curMode.derived.width != width) continue;
         if (curMode.derived.height != height) continue;
