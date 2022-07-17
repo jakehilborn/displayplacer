@@ -1,11 +1,10 @@
-TARGET := displayplacer
+bindir ?= /usr/local/bin
+
 # Compiler flags:
 #  -Wall turns on most but not all compiler warnings
-#  -O3 optimize yet more. 
 #  -Wno-deprecated-declarations is used because CGDisplayIOServicePort was
 #    deprecated by Apple with no replacement
 #    https://developer.apple.com/documentation/coregraphics/1543516-cgdisplayioserviceport
-#  -Wextra enables some extra warning flags that are not enabled by -Wall
 WARNINGS := -Wno-deprecated-declarations
 WARNINGS += -Wall
 WARNINGS += -Wempty-body
@@ -42,20 +41,26 @@ WARNINGS += -Wshadow-uncaptured-local
 WARNINGS += -Wformat
 WARNINGS += -Wlogical-not-parentheses
 WARNINGS += -Wnull-dereference
+WARNINGS += -Wextra #TODO enable after fixing these warnings
 
-COMPILER := gcc
-OPTIMIZATION := -O3
+INSTALL ?= install
+INSTALL_PROGRAM ?= $(INSTALL)
+INSTALL_DATA ?= $(INSTALL) -m 644
 
-CFLAGS := -framework ApplicationServices -framework IOKit $(WARNINGS) $(OPTIMIZATION)
+.PHONY: all
+all: displayplacer
 
-all: $(TARGET)
+displayplacer: displayplacer.c header.h
+	$(CC) -I. $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) -o $@ $< -framework IOKit -framework ApplicationServices -Wno-deprecated-declarations
 
-$(TARGET): displayplacer.c header.h
-	$(COMPILER) $(CFLAGS) -o $(TARGET) displayplacer.c
+.PHONY: debug
+debug: CFLAGS += -g
+debug: displayplacer
 
-check:
-	exactly suite test/test.suite 
+.PHONY: install
+install: displayplacer
+	$(INSTALL_PROGRAM) $< $(DESTDIR)$(bindir)
 
-# -f needed to prevent error if file doesn't exist
+.PHONY: clean
 clean:
-	rm -f $(TARGET)
+	rm -f displayplacer

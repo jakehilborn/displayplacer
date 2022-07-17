@@ -17,11 +17,12 @@ typedef union
     } derived;
 } modes_D4;
 
-//Apple's private core graphics APIs
+//Apple's private core graphics APIs https://github.com/NUIKit/CGSInternal
 void CGSGetCurrentDisplayMode(CGDirectDisplayID display, int* modeNum);
 void CGSGetNumberOfDisplayModes(CGDirectDisplayID display, int* nModes);
 void CGSGetDisplayModeDescriptionOfLength(CGDirectDisplayID display, int idx, modes_D4* mode, int length);
 void CGSConfigureDisplayMode(CGDisplayConfigRef config, CGDirectDisplayID display, int modeNum);
+CGError CGSConfigureDisplayEnabled(CGDisplayConfigRef config, CGDirectDisplayID display, bool enabled);
 
 //Thanks to Phoenix Dev for CopyAllDisplayModes to fill the modes_D4 structures
 void CopyAllDisplayModes(CGDirectDisplayID display, modes_D4** modes, int* cnt)
@@ -56,11 +57,13 @@ typedef struct
     int height;                              //pixels tall
     int hz;                                  //refresh rate
     int depth;                               //color depth
+    bool enabled;                            //disables screen from macOS - does not turn screen off, just turns it black
     bool scaled;                             //scaling
     int x;                                   //origin x position
     int y;                                   //origin y position
     int modeNum;                             //display mode id
     int degree;                              //rotation degree
+    bool quietMissingScreen;                 //prevent printing error logs and exiting non-zero when this screen cannot be found
 } ScreenConfig;
 
 void printHelp();
@@ -68,7 +71,7 @@ void printVersion();
 void listScreens();
 void printCurrentProfile();
 CGDirectDisplayID convertUUIDtoID(char* uuid);
-bool validateScreenOnline(CGDirectDisplayID onlineDisplayList[], int screenCount, CGDirectDisplayID screenId, char* screenUUID);
+bool validateScreenOnline(CGDirectDisplayID onlineDisplayList[], int screenCount, CGDirectDisplayID screenId, char* screenUUID, bool quietMissingScreen);
 bool rotateScreen(CGDirectDisplayID screenId, char* screenUUID, int degree);
 bool configureMirror(CGDisplayConfigRef configRef, CGDirectDisplayID primaryScreenId, char* primaryScreenUUID, CGDirectDisplayID mirrorScreenId, char* mirrorScreenUUID);
 bool configureResolution(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, char* screenUUID, int width, int height, int hz, int depth, bool scaled, int modeNum);
