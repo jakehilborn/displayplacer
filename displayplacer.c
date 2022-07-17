@@ -494,6 +494,7 @@ bool configureResolution(CGDisplayConfigRef configRef, CGDirectDisplayID screenI
         if (hz && curMode.derived.freq != hz) continue;
         if (depth && curMode.derived.depth != depth) continue;
         if (scaled && curMode.derived.density != 2.0) continue;
+        if (!scaled && curMode.derived.density == 2.0) continue;
 
         if (!modeFound) {
             modeFound = true;
