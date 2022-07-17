@@ -146,17 +146,6 @@ int main(int argc, char* argv[]) {
             continue;
         }
 
-        CGDirectDisplayID curScreen = -1;
-        for (int j = 0; j < screenCount; ++j) {
-            if (screenList[j] == screenConfigs[i].id) {
-                curScreen = screenList[j];
-                break;
-            }
-        }
-        if (curScreen == -1) {
-            isSuccess = false;
-            continue;
-
         CGError retVal = CGSConfigureDisplayEnabled(configRef, screenConfigs[i].id, screenConfigs[i].enabled);
         isSuccess = (retVal == kCGErrorSuccess) && isSuccess;
         if (!screenConfigs[i].enabled) {
