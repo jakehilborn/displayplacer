@@ -63,7 +63,7 @@ typedef struct
     int y;                                   //origin y position
     int modeNum;                             //display mode id
     int degree;                              //rotation degree
-    bool quietMissingScreen;                 //prevent printing error logs or exiting non-zero when this screen cannot be found
+    bool quietMissingScreen;                 //prevent printing error logs and exiting non-zero when this screen cannot be found
 } ScreenConfig;
 
 void printHelp();
