@@ -173,8 +173,11 @@ int main(int argc, char* argv[]) {
             continue;
         }
 
-        CGError retVal = CGSConfigureDisplayEnabled(configRef, screenConfigs[i].id, screenConfigs[i].enabled);
-        isSuccess = (retVal == kCGErrorSuccess) && isSuccess;
+        if (isScreenEnabled(screenConfigs[i].id) != screenConfigs[i].enabled) {
+            CGError retVal = CGSConfigureDisplayEnabled(configRef, screenConfigs[i].id, screenConfigs[i].enabled);
+            isSuccess = (retVal == kCGErrorSuccess) && isSuccess;
+        }
+
         if (!screenConfigs[i].enabled) {
             continue; //screen is disabled, no need to apply other configs for this screen
         }
@@ -323,7 +326,7 @@ void listScreens() {
         }
         printf("\n");
 
-        char* enabled = CGDisplayIsActive(curScreen) ? "true" : "false"; //TODO this prints false for secondary screens in mirroring sets that are actually enabled
+        char* enabled = isScreenEnabled(curScreen) ? "true" : "false";
         printf("Enabled: %s\n", enabled);
 
         int modeCount;
@@ -459,6 +462,10 @@ bool validateScreenOnline(CGDirectDisplayID onlineDisplayList[], int screenCount
         fprintf(stderr, "Unable to find screen %s - skipping changes for that screen\n", screenUUID);
     }
     return false;
+}
+
+bool isScreenEnabled(CGDirectDisplayID screenId) {
+    return CGDisplayIsActive(screenId) || CGDisplayIsInMirrorSet(screenId);
 }
 
 bool rotateScreen(CGDirectDisplayID screenId, char* screenUUID, int degree) {

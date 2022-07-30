@@ -72,6 +72,7 @@ void listScreens();
 void printCurrentProfile();
 CGDirectDisplayID convertUUIDtoID(char* uuid);
 bool validateScreenOnline(CGDirectDisplayID onlineDisplayList[], int screenCount, CGDirectDisplayID screenId, char* screenUUID, bool quietMissingScreen);
+bool isScreenEnabled(CGDirectDisplayID screenId);
 bool rotateScreen(CGDirectDisplayID screenId, char* screenUUID, int degree);
 bool configureMirror(CGDisplayConfigRef configRef, CGDirectDisplayID primaryScreenId, char* primaryScreenUUID, CGDirectDisplayID mirrorScreenId, char* mirrorScreenUUID);
 bool configureResolution(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, char* screenUUID, int width, int height, int hz, int depth, bool scaled, int modeNum);
