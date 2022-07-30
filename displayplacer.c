@@ -141,7 +141,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    CGDisplayCount screenCount; //TODO move this to validate screen online
+    CGDisplayCount screenCount;
     CGGetOnlineDisplayList(INT_MAX, NULL, &screenCount); //get number of online screens and store in screenCount
     CGDirectDisplayID screenList[screenCount];
     CGGetOnlineDisplayList(INT_MAX, screenList, &screenCount); //store display list in array of size screenCount
@@ -205,7 +205,7 @@ int main(int argc, char* argv[]) {
         isSuccess = configureResolution(configRef, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].width, screenConfigs[i].height, screenConfigs[i].hz, screenConfigs[i].depth, screenConfigs[i].scaled, screenConfigs[i].modeNum) && isSuccess;
 
         CGPoint curOrigin = CGDisplayBounds(screenConfigs[i].id).origin;
-        if ((int) curOrigin.x != screenConfigs[i].x || (int) curOrigin.y != screenConfigs[i].y) { //TODO only apply origin if screenCount > 1
+        if (((int) curOrigin.x != screenConfigs[i].x || (int) curOrigin.y != screenConfigs[i].y) && screenCount > 1) { //setting a screen to its current origin makes displayplacer hang for a couple seconds. If there is only one screen, macOS will force the origin to be (0,0) so we do not need to set it.
             isSuccess = configureOrigin(configRef, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].x, screenConfigs[i].y) && isSuccess;
         }
     }
