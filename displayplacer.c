@@ -25,9 +25,11 @@ int main(int argc, char* argv[]) {
     }
 
     ScreenConfig* screenConfigs = malloc((argc - 1) * sizeof(ScreenConfig));
-    
+
     for (int i = 0; i < argc - 1; i++) {
-        screenConfigs[i].depth = 0; //overwrite garbage in memory for optional params
+        //overwrite garbage in memory with default values
+        strlcpy(screenConfigs[i].uuid, "\0", sizeof(screenConfigs[i].uuid));
+        screenConfigs[i].depth = 0;
         screenConfigs[i].hz = 0;
         screenConfigs[i].enabled = true;
         screenConfigs[i].quietMissingScreen = false;
@@ -139,10 +141,25 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    CGDisplayCount screenCount;
+    CGDisplayCount screenCount; //TODO move this to validate screen online
     CGGetOnlineDisplayList(INT_MAX, NULL, &screenCount); //get number of online screens and store in screenCount
     CGDirectDisplayID screenList[screenCount];
     CGGetOnlineDisplayList(INT_MAX, screenList, &screenCount); //store display list in array of size screenCount
+
+    //If there is only one active screen and no screen id was provided, don't require a screen id and instead default to the only available screen id.
+    //Active means the display is not disabled and is not mirroring another screen.
+    if (screenConfigs[0].uuid[0] == '\0') {
+        CGDisplayCount activeScreenCount; //count of active screens
+        CGGetActiveDisplayList(INT_MAX, NULL, &activeScreenCount); //get number of active screens and store in activeScreenCount
+        CGDirectDisplayID activeScreenList[activeScreenCount];
+        CGGetActiveDisplayList(INT_MAX, activeScreenList, &activeScreenCount); //store active display list in array of size activeScreenCount
+
+        if (activeScreenCount == 1) {
+            char curScreenUUID[UUID_SIZE];
+            CFStringGetCString(CFUUIDCreateString(kCFAllocatorDefault, CGDisplayCreateUUIDFromDisplayID(activeScreenList[0])), curScreenUUID, sizeof(curScreenUUID), kCFStringEncodingUTF8);
+            strlcpy(screenConfigs[0].uuid, curScreenUUID, sizeof(screenConfigs[0].uuid));
+        }
+    }
 
     CGDisplayConfigRef configRef;
     CGBeginDisplayConfiguration(&configRef);
@@ -185,7 +202,7 @@ int main(int argc, char* argv[]) {
         isSuccess = configureResolution(configRef, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].width, screenConfigs[i].height, screenConfigs[i].hz, screenConfigs[i].depth, screenConfigs[i].scaled, screenConfigs[i].modeNum) && isSuccess;
 
         CGPoint curOrigin = CGDisplayBounds(screenConfigs[i].id).origin;
-        if ((int) curOrigin.x != screenConfigs[i].x || (int) curOrigin.y != screenConfigs[i].y) {
+        if ((int) curOrigin.x != screenConfigs[i].x || (int) curOrigin.y != screenConfigs[i].y) { //TODO only apply origin if screenCount > 1
             isSuccess = configureOrigin(configRef, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].x, screenConfigs[i].y) && isSuccess;
         }
     }
