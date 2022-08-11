@@ -60,6 +60,28 @@ int main(int argc, char* argv[]) {
                     screenConfigs[i].mirrorCount = j;
 
                     break;
+                case 'S': //serial
+                    propToken = strtok_r(NULL, ":", &propSavePtr);
+                    UInt32 serialID = atoi(propToken);
+                    char persistentID[UUID_SIZE];
+                    getUUIDfromSerial(serialID, persistentID);
+                    strlcpy(screenConfigs[i].uuid, persistentID, sizeof(screenConfigs[i].uuid));
+
+                    idToken = strtok_r(propToken, "+", &propToken);
+                    j = 0;
+                    while ((idToken = strtok_r(propToken, "+", &propToken))) {
+                        UInt32 serialMirrorID = atoi(idToken);
+                        char persistentMirrorID[UUID_SIZE];
+                        getUUIDfromSerial(serialMirrorID, persistentMirrorID);
+                        strlcpy(screenConfigs[i].mirrorUUIDs[j], persistentMirrorID, sizeof(screenConfigs[i].mirrorUUIDs[j]));
+                        j++;
+                        
+                        if (j > 127) {
+                            fprintf(stderr, "Current code only supports 128 screens mirroring. Please execute `displayplacer --version` for info on contacting the developer to change this.\n");
+                        }
+                    }
+
+                    break;
                 case 'r': //res
                     propToken = strtok_r(NULL, ":", &propSavePtr);
 
@@ -250,9 +272,11 @@ void listScreens() {
         CGSGetDisplayModeDescriptionOfLength(curScreen, curModeId, &curMode, 0xD4);
 
         char curScreenUUID[UUID_SIZE];
+        UInt32 serialID = CGDisplaySerialNumber(screenList[i]);
         CFStringGetCString(CFUUIDCreateString(kCFAllocatorDefault, CGDisplayCreateUUIDFromDisplayID(curScreen)), curScreenUUID, sizeof(curScreenUUID), kCFStringEncodingUTF8);
         printf("Persistent screen id: %s\n", curScreenUUID);
         printf("Contextual screen id: %i\n", curScreen);
+        printf("Serial screen id: %u\n", serialID);
 
         if (CGDisplayIsBuiltin(curScreen)) {
             printf("Type: MacBook built in screen\n");
@@ -730,3 +754,24 @@ bool setPosition(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, char*
 
     return true;
 }
+
+
+void getUUIDfromSerial(UInt32 serialID, char* persistentUUID){
+    CGDisplayCount screenCount;
+    CGGetOnlineDisplayList(INT_MAX, NULL, &screenCount); //get number of online screens and store in screenCount
+
+    CGDirectDisplayID screenList[screenCount];
+    CGGetOnlineDisplayList(INT_MAX, screenList, &screenCount);
+
+    CGDirectDisplayID contextualID = 0;  //contextual
+
+    for (int i = 0; i < screenCount; i++) {
+        CGDirectDisplayID curUUID = screenList[i];
+        UInt32 curSerial = CGDisplaySerialNumber(curUUID);
+        if(curSerial == serialID){
+            contextualID = curUUID;
+        }
+    }
+    CFStringGetCString(CFUUIDCreateString(kCFAllocatorDefault, CGDisplayCreateUUIDFromDisplayID(contextualID)), persistentUUID, UUID_SIZE * sizeof(char), kCFStringEncodingUTF8);
+}
+

@@ -50,6 +50,7 @@ typedef struct
 {
     char uuid[UUID_SIZE];                    //user input display identifier that stays consistent despite GPU or port changes (persistent screen id)
     char mirrorUUIDs[MIRROR_MAX][UUID_SIZE]; //user input display UUIDs that mirror this display
+    UInt32 serialID;                         //user input display serial ID
     CGDirectDisplayID id;                    //display identifier used for Quartz Display Services (contextual screen id)
     CGDirectDisplayID mirrors[MIRROR_MAX];   //display IDs that mirror this display used for Quartz Display Services
     int mirrorCount;                         //number of displays that mirror this display
@@ -72,6 +73,7 @@ void printVersion();
 void listScreens();
 void printCurrentProfile();
 CGDirectDisplayID convertUUIDtoID(char* uuid);
+void getUUIDfromSerial(UInt32 serialID, char* persistentUUID);
 bool validateScreenOnline(CGDirectDisplayID onlineDisplayList[], CGDisplayCount screenCount, CGDirectDisplayID screenId, char* screenUUID, bool quietMissingScreen);
 bool isScreenEnabled(CGDirectDisplayID screenId);
 bool unsetMirrors(ScreenConfig* screenConfigs, int argc, CGDirectDisplayID screenList[], CGDisplayCount screenCount);
