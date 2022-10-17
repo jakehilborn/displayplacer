@@ -183,6 +183,10 @@ int main(int argc, char* argv[]) {
             isSuccess = rotateScreen(screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].degree) && isSuccess;
         }
 
+        if (screenConfigs[i].mirrorCount == 0) {
+            isSuccess = disableMirror(configRef, screenConfigs[i].id, screenConfigs[i].uuid) && isSuccess;
+        }
+
         for (int j = 0; j < screenConfigs[i].mirrorCount; j++) {
             screenConfigs[i].mirrors[j] = convertUUIDtoID(screenConfigs[i].mirrorUUIDs[j]);
             if (!validateScreenOnline(screenList, screenCount, screenConfigs[i].mirrors[j], screenConfigs[i].mirrorUUIDs[j], screenConfigs[i].quietMissingScreen)) {
@@ -475,6 +479,18 @@ bool configureMirror(CGDisplayConfigRef configRef, CGDirectDisplayID primaryScre
 
     return true;
 }
+
+bool disableMirror(CGDisplayConfigRef configRef, CGDirectDisplayID mirrorScreenId, char* mirrorScreenUUID) {
+    int retVal = CGConfigureDisplayMirrorOfDisplay(configRef, mirrorScreenId, kCGNullDirectDisplay);
+
+    if (retVal != 0) {
+        fprintf(stderr, "Error stop mirroring %s \n", mirrorScreenUUID);
+        return false;
+    }
+
+    return true;
+}
+
 
 bool configureResolution(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, char* screenUUID, int width, int height, int hz, int depth, bool scaled, int modeNum) {
     int modeCount;
