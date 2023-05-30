@@ -50,8 +50,8 @@ INSTALL_DATA ?= $(INSTALL) -m 644
 .PHONY: all
 all: displayplacer
 
-displayplacer: displayplacer.c header.h
-	$(CC) -I. $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) -o $@ $< -framework IOKit -framework ApplicationServices $(WARNINGS)
+displayplacer: displayplacer.m header.h
+	$(CC) -I. $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) -o $@ $< -F/Users/jake/Sync/Documents/code/displayplacer/displayplacer-repo/Headers -F/System/Library/PrivateFrameworks -framework DisplayServices -framework IOKit -framework ApplicationServices
 
 .PHONY: debug
 debug: CFLAGS += -g

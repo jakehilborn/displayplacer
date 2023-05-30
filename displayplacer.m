@@ -6,8 +6,82 @@
 #include <math.h>
 #include <stdio.h>
 #include "header.h"
+#include "Headers/Bridging-Header.h"
 
-int main(int argc, char* argv[]) {
+const int kMaxDisplays = 16;
+
+int main(int argc, char *argv[]) {
+    CGDirectDisplayID display[kMaxDisplays];
+    CGDisplayCount numDisplays;
+    CGDisplayErr err;
+    err = CGGetOnlineDisplayList(kMaxDisplays, display, &numDisplays);
+    if (err != CGDisplayNoErr) {
+        printf("cannot get list of displays (error %d)\n", err);
+        return -1;
+    }
+
+    for (CGDisplayCount i = 0; i < numDisplays; ++i) {
+        CGDirectDisplayID dspy = display[i];
+        CGDisplayModeRef mode = CGDisplayCopyDisplayMode(dspy);
+        if (mode == NULL)
+            continue;
+
+        printf("display %d (id %d): ", i, dspy);
+        if (CGDisplayIsMain(dspy))
+            printf("main, ");
+        printf("%sactive, %s, %sline, %s%s",
+               CGDisplayIsActive(dspy) ? "" : "in",
+               CGDisplayIsAsleep(dspy) ? "asleep" : "awake",
+               CGDisplayIsOnline(dspy) ? "on" : "off",
+               CGDisplayIsBuiltin(dspy) ? "built-in" : "external",
+               CGDisplayIsStereo(dspy) ? ", stereo" : "");
+        printf(", ID 0x%x\n", (unsigned int)dspy);
+
+        CGRect bounds = CGDisplayBounds(dspy);
+        printf("\tresolution %.0f x %.0f pt",
+               bounds.size.width, bounds.size.height);
+        printf(" (%zu x %zu px)",
+               CGDisplayModeGetPixelWidth(mode),
+               CGDisplayModeGetPixelHeight(mode));
+        double refreshRate = CGDisplayModeGetRefreshRate(mode);
+        if (refreshRate != 0)
+            printf(" @ %.1f Hz", refreshRate);
+        printf(", origin (%.0f, %.0f)\n",
+               bounds.origin.x, bounds.origin.y);
+        CGSize size = CGDisplayScreenSize(dspy);
+        printf("\tphysical size %.0f x %.0f mm",
+               size.width, size.height);
+        double rotation = CGDisplayRotation(dspy);
+        if (rotation)
+            printf(", rotated %.0f°", rotation);
+        printf("\n\tIOKit flags 0x%x",
+               CGDisplayModeGetIOFlags(mode));
+        printf("; IOKit display mode ID 0x%x\n",
+               CGDisplayModeGetIODisplayModeID(mode));
+        if (CGDisplayIsInMirrorSet(dspy)) {
+            CGDirectDisplayID mirrorsDisplay = CGDisplayMirrorsDisplay(dspy);
+            if (mirrorsDisplay == kCGNullDirectDisplay)
+                printf("\tmirrored\n");
+            else
+                printf("\tmirrors display ID 0x%x\n", mirrorsDisplay);
+        }
+
+        printf("\t%susable for desktop GUI%s\n",
+               CGDisplayModeIsUsableForDesktopGUI(mode) ? "" : "not ",
+               CGDisplayUsesOpenGLAcceleration(dspy) ?
+               ", uses OpenGL acceleration" : "");
+        CGDisplayModeRelease(mode);
+
+        MPDisplay* mpdisplay = [[MPDisplay alloc] initWithCGSDisplayID:dspy];
+        printf("Rotation: %d", [mpdisplay orientation]);
+        [mpdisplay setOrientation: 90];
+        break;
+
+
+    }
+}
+
+int notmain(int argc, char* argv[]) {
     if (argc == 1 || strcmp(argv[1], "--help") == 0) {
         printHelp();
         return 0;
@@ -23,6 +97,12 @@ int main(int argc, char* argv[]) {
         printCurrentProfile();
         return 0;
     }
+
+    MPDisplay* mpdisplay = [[MPDisplay alloc] initWithCGSDisplayID:722521364];
+    printf("Rotation: %d", [mpdisplay orientation]);
+    [mpdisplay setOrientation: 90];
+
+    return 0;
 
     ScreenConfig* screenConfigs = malloc((argc - 1) * sizeof(ScreenConfig));
 
