@@ -1,7 +1,6 @@
 #import <CoreGraphics/CoreGraphics.h>
 #import <CommonCrypto/CommonDigest.h>
 #import <Foundation/Foundation.h>
-#import <OSD/OSDManager.h>
 #import <MonitorPanel/MPDisplayPreset.h>
 #import <MonitorPanel/MPDisplay.h>
 #import <MonitorPanel/MPDisplayMgr.h>
@@ -33,40 +32,3 @@ void DisplayServicesBrightnessChanged(CGDirectDisplayID display, double brightne
 extern int SLSMainConnectionID(void);
 CGError SLSGetDisplayList(uint32_t maxDisplays, CGDirectDisplayID *activeDisplays, uint32_t *displayCount);
 CGError SLSGetZoomParameters(int cid, CGPoint *origin, double *zoomFactor, bool *smoothed);
-
-bool IsLidClosed(void)
-{
-    bool isClosed = false;
-    io_registry_entry_t rootDomain;
-    mach_port_t masterPort;
-    CFTypeRef clamShellStateRef = NULL;
-
-    IOReturn ioReturn = IOMasterPort(MACH_PORT_NULL, &masterPort);
-    if (ioReturn != 0) {
-        return false;
-    }
-
-    rootDomain = IORegistryEntryFromPath(masterPort, kIOPowerPlane ":/IOPowerConnection/IOPMrootDomain");
-
-    clamShellStateRef = IORegistryEntryCreateCFProperty(rootDomain, CFSTR("AppleClamshellState"), kCFAllocatorDefault, 0);
-    if (clamShellStateRef == NULL) {
-        if (rootDomain) {
-            IOObjectRelease(rootDomain);
-            return false;
-        }
-    }
-
-    if (CFBooleanGetValue((CFBooleanRef)(clamShellStateRef)) == true) {
-        isClosed = true;
-    }
-
-    if (rootDomain) {
-        IOObjectRelease(rootDomain);
-    }
-
-    if (clamShellStateRef) {
-        CFRelease(clamShellStateRef);
-    }
-
-    return isClosed;
-}
