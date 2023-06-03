@@ -66,6 +66,7 @@ typedef struct
     bool quietMissingScreen;                 //prevent printing error logs and exiting non-zero when this screen cannot be found
 } ScreenConfig;
 
+//DisplayPlacer.c
 void printHelp();
 void printVersion();
 void listScreens();
@@ -73,7 +74,9 @@ void printCurrentProfile();
 CGDirectDisplayID convertUUIDtoID(char* uuid);
 bool validateScreenOnline(CGDirectDisplayID onlineDisplayList[], int screenCount, CGDirectDisplayID screenId, char* screenUUID, bool quietMissingScreen);
 bool isScreenEnabled(CGDirectDisplayID screenId);
-bool rotateScreen(CGDirectDisplayID screenId, char* screenUUID, int degree);
 bool configureMirror(CGDisplayConfigRef configRef, CGDirectDisplayID primaryScreenId, char* primaryScreenUUID, CGDirectDisplayID mirrorScreenId, char* mirrorScreenUUID);
 bool configureResolution(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, char* screenUUID, int width, int height, int hz, int depth, bool scaled, int modeNum);
 bool configureOrigin(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, char* screenUUID, int x, int y);
+
+//MonitorPanel.m
+bool rotateScreen(CGDirectDisplayID screenId, char* screenUUID, int degree);

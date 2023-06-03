@@ -1,11 +1,8 @@
-//  displayplacer.c
-//  Created by Jake Hilborn on 5/16/15.
-
 #include <IOKit/graphics/IOGraphicsLib.h>
 #include <ApplicationServices/ApplicationServices.h>
 #include <math.h>
 #include <stdio.h>
-#include "header.h"
+#include "Header.h"
 
 int main(int argc, char* argv[]) {
     if (argc == 1 || strcmp(argv[1], "--help") == 0) {
