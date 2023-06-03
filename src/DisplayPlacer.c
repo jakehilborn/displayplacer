@@ -409,7 +409,7 @@ CGDirectDisplayID convertUUIDtoID(char* uuid) {
     return CGDisplayGetDisplayIDFromUUID(uuidRef);
 }
 
-bool validateScreenOnline(CGDirectDisplayID onlineDisplayList[], int screenCount, CGDirectDisplayID screenId, char* screenUUID, bool quietMissingScreen) {
+bool validateScreenOnline(CGDirectDisplayID onlineDisplayList[], CGDisplayCount screenCount, CGDirectDisplayID screenId, char* screenUUID, bool quietMissingScreen) {
     for (int i = 0; i < screenCount; i++) {
         if (onlineDisplayList[i] == screenId) {
             return true;
@@ -426,7 +426,7 @@ bool isScreenEnabled(CGDirectDisplayID screenId) {
     return CGDisplayIsActive(screenId) || CGDisplayIsInMirrorSet(screenId);
 }
 
-bool unsetMirrors(ScreenConfig* screenConfigs, int argc, CGDisplayConfigRef configRef, CGDirectDisplayID screenList[], int screenCount) {
+bool unsetMirrors(ScreenConfig* screenConfigs, int argc, CGDisplayConfigRef configRef, CGDirectDisplayID screenList[], CGDisplayCount screenCount) {
     bool isSuccess = true;
 
     for (int i = 0; i < argc - 1; i++) {
@@ -467,7 +467,7 @@ bool unsetMirror(CGDisplayConfigRef configRef, CGDirectDisplayID mirrorScreenId,
     return true;
 }
 
-bool setRotations(ScreenConfig* screenConfigs, int argc, CGDisplayConfigRef configRef, CGDirectDisplayID screenList[], int screenCount) {
+bool setRotations(ScreenConfig* screenConfigs, int argc, CGDisplayConfigRef configRef, CGDirectDisplayID screenList[], CGDisplayCount screenCount) {
     bool isSuccess = true;
 
     for (int i = 0; i < argc - 1; i++) {
@@ -503,7 +503,7 @@ bool setRotations(ScreenConfig* screenConfigs, int argc, CGDisplayConfigRef conf
     return isSuccess;
 }
 
-bool setMirrors(ScreenConfig* screenConfigs, int argc, CGDisplayConfigRef configRef, CGDirectDisplayID screenList[], int screenCount) {
+bool setMirrors(ScreenConfig* screenConfigs, int argc, CGDisplayConfigRef configRef, CGDirectDisplayID screenList[], CGDisplayCount screenCount) {
     bool isSuccess = true;
 
     for (int i = 0; i < argc - 1; i++) {
@@ -542,7 +542,7 @@ bool setMirror(CGDisplayConfigRef configRef, CGDirectDisplayID primaryScreenId, 
     return true;
 }
 
-bool setResolutions(ScreenConfig* screenConfigs, int argc, CGDisplayConfigRef configRef, CGDirectDisplayID screenList[], int screenCount) {
+bool setResolutions(ScreenConfig* screenConfigs, int argc, CGDisplayConfigRef configRef, CGDirectDisplayID screenList[], CGDisplayCount screenCount) {
     bool isSuccess = true;
 
     for (int i = 0; i < argc - 1; i++) {
@@ -616,7 +616,7 @@ bool setResolution(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, cha
     return false;
 }
 
-bool setPositions(ScreenConfig* screenConfigs, int argc, CGDisplayConfigRef configRef, CGDirectDisplayID screenList[], int screenCount) {
+bool setPositions(ScreenConfig* screenConfigs, int argc, CGDisplayConfigRef configRef, CGDirectDisplayID screenList[], CGDisplayCount screenCount) {
     bool isSuccess = true;
 
     for (int i = 0; i < argc - 1; i++) {
