@@ -92,3 +92,9 @@ def displayplacer(args):
 
 if __name__ == '__main__':
     main()
+
+'''
+Not working on v1.2. Start here, then config back to standard:
+displayplacer "id:34686E82-0CED-DF86-AFC7-AA1A8EB5CFC0+A46D2F5E-487B-CC69-C588-ECFD519016E5 res:1440x2160 hz:59 color_depth:4 enabled:true scaling:off origin:(0,0) degree:90" "id:F466F621-B5FA-04A0-0800-CFA6C258DECD res:1440x900 color_depth:4 enabled:true scaling:on origin:(-1440,1707) degree:0" "id:EA487A4B-D9B9-DDDD-91F8-F43E599B7E84 res:1920x1200 color_depth:4 enabled:true scaling:off origin:(-1920,-962) degree:0"
+
+'''
