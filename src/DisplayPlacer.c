@@ -426,120 +426,6 @@ bool isScreenEnabled(CGDirectDisplayID screenId) {
     return CGDisplayIsActive(screenId) || CGDisplayIsInMirrorSet(screenId);
 }
 
-bool setPositions(ScreenConfig* screenConfigs, int argc, CGDisplayConfigRef configRef, CGDirectDisplayID screenList[], int screenCount) {
-    bool isSuccess = true;
-
-    for (int i = 0; i < argc - 1; i++) {
-        screenConfigs[i].id = convertUUIDtoID(screenConfigs[i].uuid);
-        if (!validateScreenOnline(screenList, screenCount, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].quietMissingScreen)) {
-            if (!screenConfigs[i].quietMissingScreen) {
-                isSuccess = false;
-            }
-            continue;
-        }
-
-        CGPoint curOrigin = CGDisplayBounds(screenConfigs[i].id).origin;
-        if (((int) curOrigin.x != screenConfigs[i].x || (int) curOrigin.y != screenConfigs[i].y) && screenCount > 1) { //setting a screen to its current origin makes displayplacer hang for a couple seconds. If there is only one screen, macOS will force the origin to be (0,0) so we do not need to set it.
-            isSuccess = setPosition(configRef, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].x, screenConfigs[i].y) && isSuccess;
-        }
-    }
-
-    return isSuccess;
-}
-
-bool setResolutions(ScreenConfig* screenConfigs, int argc, CGDisplayConfigRef configRef, CGDirectDisplayID screenList[], int screenCount) {
-    bool isSuccess = true;
-
-    for (int i = 0; i < argc - 1; i++) {
-        screenConfigs[i].id = convertUUIDtoID(screenConfigs[i].uuid);
-        if (!validateScreenOnline(screenList, screenCount, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].quietMissingScreen)) {
-            if (!screenConfigs[i].quietMissingScreen) {
-                isSuccess = false;
-            }
-            continue;
-        }
-
-        isSuccess = setResolution(configRef, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].width, screenConfigs[i].height, screenConfigs[i].hz, screenConfigs[i].depth, screenConfigs[i].scaled, screenConfigs[i].modeNum) && isSuccess;
-    }
-
-    return isSuccess;
-}
-
-bool setMirrors(ScreenConfig* screenConfigs, int argc, CGDisplayConfigRef configRef, CGDirectDisplayID screenList[], int screenCount) {
-    bool isSuccess = true;
-
-    for (int i = 0; i < argc - 1; i++) {
-        screenConfigs[i].id = convertUUIDtoID(screenConfigs[i].uuid);
-        if (!validateScreenOnline(screenList, screenCount, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].quietMissingScreen)) {
-            if (!screenConfigs[i].quietMissingScreen) {
-                isSuccess = false;
-            }
-            continue;
-        }
-
-        for (int j = 0; j < screenConfigs[i].mirrorCount; j++) {
-            screenConfigs[i].mirrors[j] = convertUUIDtoID(screenConfigs[i].mirrorUUIDs[j]);
-            if (!validateScreenOnline(screenList, screenCount, screenConfigs[i].mirrors[j], screenConfigs[i].mirrorUUIDs[j], screenConfigs[i].quietMissingScreen)) {
-                if (!screenConfigs[i].quietMissingScreen) {
-                    isSuccess = false;
-                }
-                continue;
-            }
-
-            isSuccess = setMirror(configRef, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].mirrors[j], screenConfigs[i].mirrorUUIDs[j]) && isSuccess;
-        }
-    }
-
-    return isSuccess;
-}
-
-bool setRotations(ScreenConfig* screenConfigs, int argc, CGDisplayConfigRef configRef, CGDirectDisplayID screenList[], int screenCount) {
-    bool isSuccess = true;
-
-    for (int i = 0; i < argc - 1; i++) {
-        screenConfigs[i].id = convertUUIDtoID(screenConfigs[i].uuid);
-        if (!validateScreenOnline(screenList, screenCount, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].quietMissingScreen)) {
-            if (!screenConfigs[i].quietMissingScreen) {
-                isSuccess = false;
-            }
-            continue;
-        }
-
-        for (int j = 0; j < screenConfigs[i].mirrorCount; j++) {
-            screenConfigs[i].mirrors[j] = convertUUIDtoID(screenConfigs[i].mirrorUUIDs[j]);
-            if (!validateScreenOnline(screenList, screenCount, screenConfigs[i].mirrors[j], screenConfigs[i].mirrorUUIDs[j], screenConfigs[i].quietMissingScreen)) {
-                if (!screenConfigs[i].quietMissingScreen) {
-                    isSuccess = false;
-                }
-                continue;
-            }
-
-            if (CGDisplayRotation(screenConfigs[i].mirrors[j]) != screenConfigs[i].degree) {
-                isSuccess = setRotation(screenConfigs[i].mirrors[j], screenConfigs[i].mirrorUUIDs[j], screenConfigs[i].degree) && isSuccess;
-                isSuccess = unsetMirrors(screenConfigs, argc, configRef, screenList, screenCount) && isSuccess;
-            }
-        }
-
-        if (CGDisplayRotation(screenConfigs[i].id) != screenConfigs[i].degree) {
-            isSuccess = setRotation(screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].degree) && isSuccess;
-            isSuccess = unsetMirrors(screenConfigs, argc, configRef, screenList, screenCount) && isSuccess;
-        }
-    }
-
-    return isSuccess;
-}
-
-bool setMirror(CGDisplayConfigRef configRef, CGDirectDisplayID primaryScreenId, char* primaryScreenUUID, CGDirectDisplayID mirrorScreenId, char* mirrorScreenUUID) {
-    int retVal = CGConfigureDisplayMirrorOfDisplay(configRef, mirrorScreenId, primaryScreenId);
-
-    if (retVal != 0) {
-        fprintf(stderr, "Error making the secondary screen %s mirror the primary screen %s\n", mirrorScreenUUID, primaryScreenUUID);
-        return false;
-    }
-
-    return true;
-}
-
 bool unsetMirrors(ScreenConfig* screenConfigs, int argc, CGDisplayConfigRef configRef, CGDirectDisplayID screenList[], int screenCount) {
     bool isSuccess = true;
 
@@ -581,6 +467,98 @@ bool unsetMirror(CGDisplayConfigRef configRef, CGDirectDisplayID mirrorScreenId,
     return true;
 }
 
+bool setRotations(ScreenConfig* screenConfigs, int argc, CGDisplayConfigRef configRef, CGDirectDisplayID screenList[], int screenCount) {
+    bool isSuccess = true;
+
+    for (int i = 0; i < argc - 1; i++) {
+        screenConfigs[i].id = convertUUIDtoID(screenConfigs[i].uuid);
+        if (!validateScreenOnline(screenList, screenCount, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].quietMissingScreen)) {
+            if (!screenConfigs[i].quietMissingScreen) {
+                isSuccess = false;
+            }
+            continue;
+        }
+
+        for (int j = 0; j < screenConfigs[i].mirrorCount; j++) {
+            screenConfigs[i].mirrors[j] = convertUUIDtoID(screenConfigs[i].mirrorUUIDs[j]);
+            if (!validateScreenOnline(screenList, screenCount, screenConfigs[i].mirrors[j], screenConfigs[i].mirrorUUIDs[j], screenConfigs[i].quietMissingScreen)) {
+                if (!screenConfigs[i].quietMissingScreen) {
+                    isSuccess = false;
+                }
+                continue;
+            }
+
+            if (CGDisplayRotation(screenConfigs[i].mirrors[j]) != screenConfigs[i].degree) {
+                isSuccess = setRotation(screenConfigs[i].mirrors[j], screenConfigs[i].mirrorUUIDs[j], screenConfigs[i].degree) && isSuccess;
+                isSuccess = unsetMirrors(screenConfigs, argc, configRef, screenList, screenCount) && isSuccess;
+            }
+        }
+
+        if (CGDisplayRotation(screenConfigs[i].id) != screenConfigs[i].degree) {
+            isSuccess = setRotation(screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].degree) && isSuccess;
+            isSuccess = unsetMirrors(screenConfigs, argc, configRef, screenList, screenCount) && isSuccess;
+        }
+    }
+
+    return isSuccess;
+}
+
+bool setMirrors(ScreenConfig* screenConfigs, int argc, CGDisplayConfigRef configRef, CGDirectDisplayID screenList[], int screenCount) {
+    bool isSuccess = true;
+
+    for (int i = 0; i < argc - 1; i++) {
+        screenConfigs[i].id = convertUUIDtoID(screenConfigs[i].uuid);
+        if (!validateScreenOnline(screenList, screenCount, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].quietMissingScreen)) {
+            if (!screenConfigs[i].quietMissingScreen) {
+                isSuccess = false;
+            }
+            continue;
+        }
+
+        for (int j = 0; j < screenConfigs[i].mirrorCount; j++) {
+            screenConfigs[i].mirrors[j] = convertUUIDtoID(screenConfigs[i].mirrorUUIDs[j]);
+            if (!validateScreenOnline(screenList, screenCount, screenConfigs[i].mirrors[j], screenConfigs[i].mirrorUUIDs[j], screenConfigs[i].quietMissingScreen)) {
+                if (!screenConfigs[i].quietMissingScreen) {
+                    isSuccess = false;
+                }
+                continue;
+            }
+
+            isSuccess = setMirror(configRef, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].mirrors[j], screenConfigs[i].mirrorUUIDs[j]) && isSuccess;
+        }
+    }
+
+    return isSuccess;
+}
+
+bool setMirror(CGDisplayConfigRef configRef, CGDirectDisplayID primaryScreenId, char* primaryScreenUUID, CGDirectDisplayID mirrorScreenId, char* mirrorScreenUUID) {
+    int retVal = CGConfigureDisplayMirrorOfDisplay(configRef, mirrorScreenId, primaryScreenId);
+
+    if (retVal != 0) {
+        fprintf(stderr, "Error making the secondary screen %s mirror the primary screen %s\n", mirrorScreenUUID, primaryScreenUUID);
+        return false;
+    }
+
+    return true;
+}
+
+bool setResolutions(ScreenConfig* screenConfigs, int argc, CGDisplayConfigRef configRef, CGDirectDisplayID screenList[], int screenCount) {
+    bool isSuccess = true;
+
+    for (int i = 0; i < argc - 1; i++) {
+        screenConfigs[i].id = convertUUIDtoID(screenConfigs[i].uuid);
+        if (!validateScreenOnline(screenList, screenCount, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].quietMissingScreen)) {
+            if (!screenConfigs[i].quietMissingScreen) {
+                isSuccess = false;
+            }
+            continue;
+        }
+
+        isSuccess = setResolution(configRef, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].width, screenConfigs[i].height, screenConfigs[i].hz, screenConfigs[i].depth, screenConfigs[i].scaled, screenConfigs[i].modeNum) && isSuccess;
+    }
+
+    return isSuccess;
+}
 
 bool setResolution(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, char* screenUUID, int width, int height, int hz, int depth, bool scaled, int modeNum) {
     int modeCount;
@@ -636,6 +614,27 @@ bool setResolution(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, cha
     fprintf(stderr, "\n");
 
     return false;
+}
+
+bool setPositions(ScreenConfig* screenConfigs, int argc, CGDisplayConfigRef configRef, CGDirectDisplayID screenList[], int screenCount) {
+    bool isSuccess = true;
+
+    for (int i = 0; i < argc - 1; i++) {
+        screenConfigs[i].id = convertUUIDtoID(screenConfigs[i].uuid);
+        if (!validateScreenOnline(screenList, screenCount, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].quietMissingScreen)) {
+            if (!screenConfigs[i].quietMissingScreen) {
+                isSuccess = false;
+            }
+            continue;
+        }
+
+        CGPoint curOrigin = CGDisplayBounds(screenConfigs[i].id).origin;
+        if (((int) curOrigin.x != screenConfigs[i].x || (int) curOrigin.y != screenConfigs[i].y) && screenCount > 1) { //setting a screen to its current origin makes displayplacer hang for a couple seconds. If there is only one screen, macOS will force the origin to be (0,0) so we do not need to set it.
+            isSuccess = setPosition(configRef, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].x, screenConfigs[i].y) && isSuccess;
+        }
+    }
+
+    return isSuccess;
 }
 
 bool setPosition(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, char* screenUUID, int x, int y) {
