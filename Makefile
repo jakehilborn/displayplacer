@@ -51,7 +51,7 @@ INSTALL_DATA ?= $(INSTALL) -m 644
 all: displayplacer
 
 displayplacer:
-	$(CC) -I. $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) DisplayPlacer.c -x objective-c MonitorPanel.m -o $@ $< -F/Users/jake/Sync/Documents/code/displayplacer/displayplacer-repo/Headers -F/System/Library/PrivateFrameworks -framework IOKit -framework ApplicationServices -framework DisplayServices -framework CoreDisplay -framework OSD -framework MonitorPanel -framework SkyLight
+	$(CC) -I. $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) DisplayPlacer.c -x objective-c MonitorPanel.m -o $@ $< -F./Headers -F/System/Library/PrivateFrameworks -framework IOKit -framework ApplicationServices -framework DisplayServices -framework CoreDisplay -framework OSD -framework MonitorPanel -framework SkyLight
 
 .PHONY: debug
 debug: CFLAGS += -g
