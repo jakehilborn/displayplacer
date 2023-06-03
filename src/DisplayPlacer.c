@@ -162,9 +162,9 @@ int main(int argc, char* argv[]) {
     CGBeginDisplayConfiguration(&configRef);
     bool isSuccess = true; //returns non-zero exit code on any errors but allows for completing remaining program execution
 
-    isSuccess = disableAllMirrors(screenConfigs, argc, configRef, screenList, screenCount) && isSuccess;
-    isSuccess = rotateAllScreens(screenConfigs, argc, configRef, screenList, screenCount) && isSuccess;
-    isSuccess = mirrorScreens(screenConfigs, argc, configRef, screenList, screenCount) && isSuccess;
+    isSuccess = unsetMirrors(screenConfigs, argc, configRef, screenList, screenCount) && isSuccess;
+    isSuccess = setRotations(screenConfigs, argc, configRef, screenList, screenCount) && isSuccess;
+    isSuccess = setMirrors(screenConfigs, argc, configRef, screenList, screenCount) && isSuccess;
     isSuccess = setResolutions(screenConfigs, argc, configRef, screenList, screenCount) && isSuccess;
     isSuccess = setPositions(screenConfigs, argc, configRef, screenList, screenCount) && isSuccess;
 
@@ -440,11 +440,10 @@ bool setPositions(ScreenConfig* screenConfigs, int argc, CGDisplayConfigRef conf
 
         CGPoint curOrigin = CGDisplayBounds(screenConfigs[i].id).origin;
         if (((int) curOrigin.x != screenConfigs[i].x || (int) curOrigin.y != screenConfigs[i].y) && screenCount > 1) { //setting a screen to its current origin makes displayplacer hang for a couple seconds. If there is only one screen, macOS will force the origin to be (0,0) so we do not need to set it.
-            isSuccess = configureOrigin(configRef, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].x, screenConfigs[i].y) && isSuccess;
+            isSuccess = setPosition(configRef, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].x, screenConfigs[i].y) && isSuccess;
         }
     }
 
-//    CGCompleteDisplayConfiguration(configRef, kCGConfigurePermanently);
     return isSuccess;
 }
 
@@ -460,14 +459,13 @@ bool setResolutions(ScreenConfig* screenConfigs, int argc, CGDisplayConfigRef co
             continue;
         }
 
-        isSuccess = configureResolution(configRef, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].width, screenConfigs[i].height, screenConfigs[i].hz, screenConfigs[i].depth, screenConfigs[i].scaled, screenConfigs[i].modeNum) && isSuccess;
+        isSuccess = setResolution(configRef, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].width, screenConfigs[i].height, screenConfigs[i].hz, screenConfigs[i].depth, screenConfigs[i].scaled, screenConfigs[i].modeNum) && isSuccess;
     }
 
-//    CGCompleteDisplayConfiguration(configRef, kCGConfigurePermanently);
     return isSuccess;
 }
 
-bool mirrorScreens(ScreenConfig* screenConfigs, int argc, CGDisplayConfigRef configRef, CGDirectDisplayID screenList[], int screenCount) {
+bool setMirrors(ScreenConfig* screenConfigs, int argc, CGDisplayConfigRef configRef, CGDirectDisplayID screenList[], int screenCount) {
     bool isSuccess = true;
 
     for (int i = 0; i < argc - 1; i++) {
@@ -488,15 +486,14 @@ bool mirrorScreens(ScreenConfig* screenConfigs, int argc, CGDisplayConfigRef con
                 continue;
             }
 
-            isSuccess = configureMirror(configRef, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].mirrors[j], screenConfigs[i].mirrorUUIDs[j]) && isSuccess;
+            isSuccess = setMirror(configRef, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].mirrors[j], screenConfigs[i].mirrorUUIDs[j]) && isSuccess;
         }
     }
 
-//    CGCompleteDisplayConfiguration(configRef, kCGConfigurePermanently);
     return isSuccess;
 }
 
-bool rotateAllScreens(ScreenConfig* screenConfigs, int argc, CGDisplayConfigRef configRef, CGDirectDisplayID screenList[], int screenCount) {
+bool setRotations(ScreenConfig* screenConfigs, int argc, CGDisplayConfigRef configRef, CGDirectDisplayID screenList[], int screenCount) {
     bool isSuccess = true;
 
     for (int i = 0; i < argc - 1; i++) {
@@ -518,22 +515,21 @@ bool rotateAllScreens(ScreenConfig* screenConfigs, int argc, CGDisplayConfigRef 
             }
 
             if (CGDisplayRotation(screenConfigs[i].mirrors[j]) != screenConfigs[i].degree) {
-                isSuccess = rotateScreen(screenConfigs[i].mirrors[j], screenConfigs[i].mirrorUUIDs[j], screenConfigs[i].degree) && isSuccess;
-                isSuccess = disableAllMirrors(screenConfigs, argc, configRef, screenList, screenCount) && isSuccess;
+                isSuccess = setRotation(screenConfigs[i].mirrors[j], screenConfigs[i].mirrorUUIDs[j], screenConfigs[i].degree) && isSuccess;
+                isSuccess = unsetMirrors(screenConfigs, argc, configRef, screenList, screenCount) && isSuccess;
             }
         }
 
         if (CGDisplayRotation(screenConfigs[i].id) != screenConfigs[i].degree) {
-            isSuccess = rotateScreen(screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].degree) && isSuccess;
-            isSuccess = disableAllMirrors(screenConfigs, argc, configRef, screenList, screenCount) && isSuccess;
+            isSuccess = setRotation(screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].degree) && isSuccess;
+            isSuccess = unsetMirrors(screenConfigs, argc, configRef, screenList, screenCount) && isSuccess;
         }
     }
 
-//    CGCompleteDisplayConfiguration(configRef, kCGConfigurePermanently);
     return isSuccess;
 }
 
-bool configureMirror(CGDisplayConfigRef configRef, CGDirectDisplayID primaryScreenId, char* primaryScreenUUID, CGDirectDisplayID mirrorScreenId, char* mirrorScreenUUID) {
+bool setMirror(CGDisplayConfigRef configRef, CGDirectDisplayID primaryScreenId, char* primaryScreenUUID, CGDirectDisplayID mirrorScreenId, char* mirrorScreenUUID) {
     int retVal = CGConfigureDisplayMirrorOfDisplay(configRef, mirrorScreenId, primaryScreenId);
 
     if (retVal != 0) {
@@ -544,10 +540,10 @@ bool configureMirror(CGDisplayConfigRef configRef, CGDirectDisplayID primaryScre
     return true;
 }
 
-bool disableAllMirrors(ScreenConfig* screenConfigs, int argc, CGDisplayConfigRef configRef, CGDirectDisplayID screenList[], int screenCount) {
+bool unsetMirrors(ScreenConfig* screenConfigs, int argc, CGDisplayConfigRef configRef, CGDirectDisplayID screenList[], int screenCount) {
     bool isSuccess = true;
 
-    for (int i = 0; i < argc - 1; i++) { //disable all mirrors
+    for (int i = 0; i < argc - 1; i++) {
         screenConfigs[i].id = convertUUIDtoID(screenConfigs[i].uuid);
         if (!validateScreenOnline(screenList, screenCount, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].quietMissingScreen)) {
             if (!screenConfigs[i].quietMissingScreen) {
@@ -565,17 +561,16 @@ bool disableAllMirrors(ScreenConfig* screenConfigs, int argc, CGDisplayConfigRef
                 continue;
             }
 
-            isSuccess = disableMirror(configRef, screenConfigs[i].mirrors[j], screenConfigs[i].mirrorUUIDs[j]) && isSuccess;
+            isSuccess = unsetMirror(configRef, screenConfigs[i].mirrors[j], screenConfigs[i].mirrorUUIDs[j]) && isSuccess;
         }
 
-        isSuccess = disableMirror(configRef, screenConfigs[i].id, screenConfigs[i].uuid) && isSuccess;
+        isSuccess = unsetMirror(configRef, screenConfigs[i].id, screenConfigs[i].uuid) && isSuccess;
     }
 
-//    CGCompleteDisplayConfiguration(configRef, kCGConfigurePermanently);
     return isSuccess;
 }
 
-bool disableMirror(CGDisplayConfigRef configRef, CGDirectDisplayID mirrorScreenId, char* mirrorScreenUUID) {
+bool unsetMirror(CGDisplayConfigRef configRef, CGDirectDisplayID mirrorScreenId, char* mirrorScreenUUID) {
     int retVal = CGConfigureDisplayMirrorOfDisplay(configRef, mirrorScreenId, kCGNullDirectDisplay);
 
     if (retVal != 0) {
@@ -587,7 +582,7 @@ bool disableMirror(CGDisplayConfigRef configRef, CGDirectDisplayID mirrorScreenI
 }
 
 
-bool configureResolution(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, char* screenUUID, int width, int height, int hz, int depth, bool scaled, int modeNum) {
+bool setResolution(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, char* screenUUID, int width, int height, int hz, int depth, bool scaled, int modeNum) {
     int modeCount;
     modes_D4* modes;
 
@@ -643,7 +638,7 @@ bool configureResolution(CGDisplayConfigRef configRef, CGDirectDisplayID screenI
     return false;
 }
 
-bool configureOrigin(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, char* screenUUID, int x, int y) {
+bool setPosition(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, char* screenUUID, int x, int y) {
     int retVal = CGConfigureDisplayOrigin(configRef, screenId, x, y);
 
     if (retVal != 0) {

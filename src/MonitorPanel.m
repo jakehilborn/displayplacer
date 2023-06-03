@@ -1,6 +1,6 @@
 #include "Headers/Bridging-Header.h"
 
-bool rotateScreen(CGDirectDisplayID screenId, char* screenUUID, int degree) {
+bool setRotation(CGDirectDisplayID screenId, char* screenUUID, int degree) {
     MPDisplay* mpDisplay = [[MPDisplay alloc] initWithCGSDisplayID:screenId];
     [mpDisplay setOrientation: degree];
 
