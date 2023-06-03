@@ -50,8 +50,8 @@ INSTALL_DATA ?= $(INSTALL) -m 644
 .PHONY: all
 all: displayplacer
 
-displayplacer: displayplacer.c header.h
-	$(CC) -I. $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) -o $@ $< -framework IOKit -framework ApplicationServices $(WARNINGS)
+displayplacer:
+	$(CC) -I. $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) DisplayPlacer.c -x objective-c MonitorPanel.m -o $@ $< -F./Headers -F/System/Library/PrivateFrameworks -framework IOKit -framework ApplicationServices -framework DisplayServices -framework CoreDisplay -framework OSD -framework MonitorPanel -framework SkyLight $(WARNINGS)
 
 .PHONY: debug
 debug: CFLAGS += -g

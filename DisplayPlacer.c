@@ -1,11 +1,8 @@
-//  displayplacer.c
-//  Created by Jake Hilborn on 5/16/15.
-
 #include <IOKit/graphics/IOGraphicsLib.h>
 #include <ApplicationServices/ApplicationServices.h>
 #include <math.h>
 #include <stdio.h>
-#include "header.h"
+#include "Header.h"
 
 int main(int argc, char* argv[]) {
     if (argc == 1 || strcmp(argv[1], "--help") == 0) {
@@ -466,35 +463,6 @@ bool validateScreenOnline(CGDirectDisplayID onlineDisplayList[], int screenCount
 
 bool isScreenEnabled(CGDirectDisplayID screenId) {
     return CGDisplayIsActive(screenId) || CGDisplayIsInMirrorSet(screenId);
-}
-
-bool rotateScreen(CGDirectDisplayID screenId, char* screenUUID, int degree) {
-    io_service_t service = CGDisplayIOServicePort(screenId);
-    IOOptionBits options;
-
-    switch(degree) {
-        default:
-            options = (0x00000400 | (kIOScaleRotate0)  << 16);
-            break;
-        case 90:
-            options = (0x00000400 | (kIOScaleRotate90)  << 16);
-            break;
-        case 180:
-            options = (0x00000400 | (kIOScaleRotate180)  << 16);
-            break;
-        case 270:
-            options = (0x00000400 | (kIOScaleRotate270)  << 16);
-            break;
-    }
-
-    int retVal = IOServiceRequestProbe(service, options);
-
-    if (retVal != 0) {
-        fprintf(stderr, "Error rotating screen %s: %s, code: 0x%x\n", screenUUID, mach_error_string(retVal), retVal);
-        return false;
-    }
-
-    return true;
 }
 
 bool configureMirror(CGDisplayConfigRef configRef, CGDirectDisplayID primaryScreenId, char* primaryScreenUUID, CGDirectDisplayID mirrorScreenId, char* mirrorScreenUUID) {
