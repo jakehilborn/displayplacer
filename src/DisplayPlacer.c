@@ -290,7 +290,7 @@ void listScreens() {
         printf("Enabled: %s\n", enabled);
 
         int modeCount;
-        modes_D4* modes; //TODO free this
+        modes_D4* modes;
         CopyAllDisplayModes(curScreen, &modes, &modeCount);
 
         printf("Resolutions for rotation %i:\n", (int) CGDisplayRotation(curScreen));
@@ -316,6 +316,7 @@ void listScreens() {
             printf("\n");
         }
         printf("\n");
+        free(modes);
     }
 }
 
@@ -673,6 +674,7 @@ bool setResolution(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, cha
 
     if (modeFound) {
         CGSConfigureDisplayMode(configRef, screenId, bestMode.derived.mode);
+        free(modes);
         return true;
     }
 
@@ -688,6 +690,7 @@ bool setResolution(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, cha
 
     fprintf(stderr, "\n");
 
+    free(modes);
     return false;
 }
 
