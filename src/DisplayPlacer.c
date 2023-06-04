@@ -1,5 +1,6 @@
 #include <IOKit/graphics/IOGraphicsLib.h>
 #include <ApplicationServices/ApplicationServices.h>
+#include <mach/mach.h>
 #include <math.h>
 #include <stdio.h>
 #include "Header.h"
