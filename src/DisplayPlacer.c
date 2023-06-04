@@ -158,13 +158,14 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    CGDisplayConfigRef configRef;
-    CGBeginDisplayConfiguration(&configRef);
     bool isSuccess = true; //returns non-zero exit code on any errors but allows for completing remaining program execution
 
-    isSuccess = setEnableds(screenConfigs, argc, configRef, screenList, screenCount) && isSuccess;
-    isSuccess = unsetMirrors(screenConfigs, argc, configRef, screenList, screenCount) && isSuccess;
-    isSuccess = setRotations(screenConfigs, argc, configRef, screenList, screenCount) && isSuccess;
+    isSuccess = setEnableds(screenConfigs, argc, screenList, screenCount) && isSuccess;
+    isSuccess = unsetMirrors(screenConfigs, argc, screenList, screenCount) && isSuccess;
+    isSuccess = setRotations(screenConfigs, argc, screenList, screenCount) && isSuccess;
+
+    CGDisplayConfigRef configRef;
+    CGBeginDisplayConfiguration(&configRef);
     isSuccess = setMirrors(screenConfigs, argc, configRef, screenList, screenCount) && isSuccess;
     isSuccess = setResolutions(screenConfigs, argc, configRef, screenList, screenCount) && isSuccess;
     isSuccess = setPositions(screenConfigs, argc, configRef, screenList, screenCount) && isSuccess;
@@ -172,7 +173,7 @@ int main(int argc, char* argv[]) {
     int retVal = CGCompleteDisplayConfiguration(configRef, kCGConfigurePermanently);
 
     if (retVal != 0) {
-        fprintf(stderr, "Error finalizing display configurations\n");
+        fprintf(stderr, "Error finalizing mirroring, resolutions, and/or positions\n");
         isSuccess = false;
     }
 
@@ -427,7 +428,9 @@ bool isScreenEnabled(CGDirectDisplayID screenId) {
     return CGDisplayIsActive(screenId) || CGDisplayIsInMirrorSet(screenId);
 }
 
-bool unsetMirrors(ScreenConfig* screenConfigs, int argc, CGDisplayConfigRef configRef, CGDirectDisplayID screenList[], CGDisplayCount screenCount) {
+bool unsetMirrors(ScreenConfig* screenConfigs, int argc, CGDirectDisplayID screenList[], CGDisplayCount screenCount) {
+    CGDisplayConfigRef configRef;
+    CGBeginDisplayConfiguration(&configRef);
     bool isSuccess = true;
 
     for (int i = 0; i < argc - 1; i++) {
@@ -458,6 +461,11 @@ bool unsetMirrors(ScreenConfig* screenConfigs, int argc, CGDisplayConfigRef conf
         isSuccess = unsetMirror(configRef, screenConfigs[i].id, screenConfigs[i].uuid) && isSuccess;
     }
 
+    if (CGCompleteDisplayConfiguration(configRef, kCGConfigurePermanently)) {
+        fprintf(stderr, "Error unsetting mirroring as a prerequisite to applying profiles\n");
+        isSuccess = false;
+    }
+
     return isSuccess;
 }
 
@@ -472,7 +480,9 @@ bool unsetMirror(CGDisplayConfigRef configRef, CGDirectDisplayID mirrorScreenId,
     return true;
 }
 
-bool setEnableds(ScreenConfig* screenConfigs, int argc, CGDisplayConfigRef configRef, CGDirectDisplayID screenList[], CGDisplayCount screenCount) {
+bool setEnableds(ScreenConfig* screenConfigs, int argc, CGDirectDisplayID screenList[], CGDisplayCount screenCount) {
+    CGDisplayConfigRef configRef;
+    CGBeginDisplayConfiguration(&configRef);
     bool isSuccess = true;
 
     for (int i = 0; i < argc - 1; i++) {
@@ -499,6 +509,11 @@ bool setEnableds(ScreenConfig* screenConfigs, int argc, CGDisplayConfigRef confi
         isSuccess = setEnabled(configRef, screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].enabled) && isSuccess;
     }
 
+    if (CGCompleteDisplayConfiguration(configRef, kCGConfigurePermanently)) {
+        fprintf(stderr, "Error altering enabled/disabled config\n");
+        isSuccess = false;
+    }
+
     return isSuccess;
 }
 
@@ -515,7 +530,7 @@ bool setEnabled(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, char* 
     return true;
 }
 
-bool setRotations(ScreenConfig* screenConfigs, int argc, CGDisplayConfigRef configRef, CGDirectDisplayID screenList[], CGDisplayCount screenCount) {
+bool setRotations(ScreenConfig* screenConfigs, int argc, CGDirectDisplayID screenList[], CGDisplayCount screenCount) {
     bool isSuccess = true;
 
     for (int i = 0; i < argc - 1; i++) {
@@ -542,13 +557,13 @@ bool setRotations(ScreenConfig* screenConfigs, int argc, CGDisplayConfigRef conf
 
             if (CGDisplayRotation(screenConfigs[i].mirrors[j]) != screenConfigs[i].degree) {
                 isSuccess = setRotation(screenConfigs[i].mirrors[j], screenConfigs[i].mirrorUUIDs[j], screenConfigs[i].degree) && isSuccess;
-                isSuccess = unsetMirrors(screenConfigs, argc, configRef, screenList, screenCount) && isSuccess;
+                isSuccess = unsetMirrors(screenConfigs, argc, screenList, screenCount) && isSuccess;
             }
         }
 
         if (CGDisplayRotation(screenConfigs[i].id) != screenConfigs[i].degree) {
             isSuccess = setRotation(screenConfigs[i].id, screenConfigs[i].uuid, screenConfigs[i].degree) && isSuccess;
-            isSuccess = unsetMirrors(screenConfigs, argc, configRef, screenList, screenCount) && isSuccess;
+            isSuccess = unsetMirrors(screenConfigs, argc, screenList, screenCount) && isSuccess;
         }
     }
 
