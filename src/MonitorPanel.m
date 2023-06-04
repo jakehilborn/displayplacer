@@ -1,8 +1,31 @@
 #include "Headers/Bridging-Header.h"
 
-bool rotateScreen(CGDirectDisplayID screenId, char* screenUUID, int degree) {
-    MPDisplay* mpdisplay = [[MPDisplay alloc] initWithCGSDisplayID:screenId];
-    [mpdisplay setOrientation: degree];
+bool setRotation(CGDirectDisplayID screenId, char* screenUUID, int degree) {
+    bool isSuccess = true;
 
-    return true;
+    MPDisplay* mpDisplay = [[MPDisplay alloc] initWithCGSDisplayID:screenId];
+    [mpDisplay setOrientation: degree];
+
+    // block until non-blocking rotation change completes
+    int waitSeconds = 10;
+    unsigned long beginTime = time(NULL);
+    unsigned long secondsElapsed = 0;
+    while (CGDisplayRotation(screenId) != degree ) {
+        unsigned long curSecondsElapsed = time(NULL) - beginTime;
+
+        if (curSecondsElapsed > secondsElapsed) {
+            printf("Waited %lu of %i seconds for screen %s to complete rotating\n", curSecondsElapsed, waitSeconds, screenUUID);
+        }
+
+        if (curSecondsElapsed >= waitSeconds) {
+            fprintf(stderr, "Unable to confirm if screen %s successfully rotated to degree:%i\n", screenUUID, degree);
+            isSuccess = false;
+            break;
+        }
+
+        secondsElapsed = curSecondsElapsed;
+    }
+
+    [mpDisplay release];
+    return isSuccess;
 }
