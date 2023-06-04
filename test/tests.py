@@ -80,9 +80,9 @@ def main():
     test(step='test_enable_mirror_screen_and_rotate_180',
          conf='"id:A46D2F5E-487B-CC69-C588-ECFD519016E5+F466F621-B5FA-04A0-0800-CFA6C258DECD+EA487A4B-D9B9-DDDD-91F8-F43E599B7E84 res:1440x900 hz:60 color_depth:8 enabled:true scaling:on origin:(0,0) degree:180" "id:34686E82-0CED-DF86-AFC7-AA1A8EB5CFC0 res:1440x2560 hz:59 color_depth:8 enabled:true scaling:off origin:(1440,-238) degree:90"',
          expected_conf='match_input',
-         expected_code=None, # The screen rotations do work, but they time out. This is good enough so we ignore the error code.
+         expected_code=None,  # The screen rotations do work, but they time out. This is good enough so we ignore the error code.
          expected_error=None)
-    reset_conf(expected_code=None) # The screen rotations do work, but they time out. This is good enough so we ignore the error code.
+    reset_conf(expected_code=None)  # The screen rotations do work, but they time out. This is good enough so we ignore the error code.
 
 
 def test(step, conf, expected_conf, expected_code, expected_error):
