@@ -420,7 +420,7 @@ bool validateScreenOnline(CGDirectDisplayID onlineDisplayList[], CGDisplayCount 
     }
 
     if (!quietMissingScreen) {
-        fprintf(stderr, "Unable to find screen %s - skipping changes for that screen\n", screenUUID);
+        fprintf(stderr, "Unable to find screen %s - skipping changes for that screen\n", screenUUID); //TODO only print once per screen
     }
     return false;
 }
@@ -471,11 +471,11 @@ bool unsetMirrors(ScreenConfig* screenConfigs, int argc, CGDirectDisplayID scree
 }
 
 bool unsetMirror(CGDisplayConfigRef configRef, CGDirectDisplayID mirrorScreenId, char* mirrorScreenUUID) {
-    int retVal = CGConfigureDisplayMirrorOfDisplay(configRef, mirrorScreenId, kCGNullDirectDisplay);
-
-    if (retVal != 0) {
-        fprintf(stderr, "Error disabling mirroring on screen %s\n", mirrorScreenUUID);
-        return false;
+    if (CGDisplayIsInMirrorSet(mirrorScreenId) && CGDisplayMirrorsDisplay(mirrorScreenId) != 0) { //this screen is a secondary screen in a mirroring set
+        if (CGConfigureDisplayMirrorOfDisplay(configRef, mirrorScreenId, kCGNullDirectDisplay) != 0) {
+            fprintf(stderr, "Error disabling mirroring on screen %s\n", mirrorScreenUUID);
+            return false;
+        }
     }
 
     return true;
