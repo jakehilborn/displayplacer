@@ -160,12 +160,12 @@ int main(int argc, char* argv[]) {
 
     bool isSuccess = true; //returns non-zero exit code on any errors but allows for completing remaining program execution
 
-    isSuccess = setEnableds(screenConfigs, argc, screenList, screenCount) && isSuccess;
-    isSuccess = unsetMirrors(screenConfigs, argc, screenList, screenCount) && isSuccess;
-    isSuccess = setRotations(screenConfigs, argc, screenList, screenCount) && isSuccess;
+    isSuccess = setEnableds(screenConfigs, argc, screenList, screenCount) && isSuccess; //Enable/disable screens and call CGCompleteDisplayConfiguration as a prereq to applying other config.
+    isSuccess = unsetMirrors(screenConfigs, argc, screenList, screenCount) && isSuccess; //Disable all mirroring prior and call CGCompleteDisplayConfiguration as a prereq to ensure displays are in a known starting state.
+    isSuccess = setRotations(screenConfigs, argc, screenList, screenCount) && isSuccess; //Set all display rotations as a prereq so the portrait or landscape resolutions can be found when setting the resolutions. Also, disable mirroring afer each rotation alteration since macOS will often times oddly auto-enable mirroring when a screen is rotated.
 
     CGDisplayConfigRef configRef;
-    CGBeginDisplayConfiguration(&configRef);
+    CGBeginDisplayConfiguration(&configRef); //Share a configRef for the remainder of the program since these configs do not interrupt each other. This reduces the number of screen flashes when running displayplacer.
     isSuccess = setMirrors(screenConfigs, argc, configRef, screenList, screenCount) && isSuccess;
     isSuccess = setResolutions(screenConfigs, argc, configRef, screenList, screenCount) && isSuccess;
     isSuccess = setPositions(screenConfigs, argc, configRef, screenList, screenCount) && isSuccess;
