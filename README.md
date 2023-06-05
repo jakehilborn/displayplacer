@@ -4,6 +4,8 @@
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/firstcontributions/first-contributions)  
 macOS command line utility to configure multi-display resolutions and arrangements. Essentially XRandR for macOS.
 
+#### Download:
+
 Install via Homebrew with `brew tap jakehilborn/jakehilborn && brew install displayplacer` or visit the [releases](https://github.com/jakehilborn/displayplacer/releases) tab.
 
 #### Usage:
