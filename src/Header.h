@@ -73,7 +73,7 @@ void printVersion();
 void listScreens();
 void printCurrentProfile();
 CGDirectDisplayID convertUUIDtoID(char* uuid);
-void getUUIDfromSerial(UInt32 serialID, char* persistentUUID);
+CGDirectDisplayID convertSerialToID(char* serialIdString);
 bool validateScreenOnline(CGDirectDisplayID onlineDisplayList[], CGDisplayCount screenCount, CGDirectDisplayID screenId, char* screenUUID, bool quietMissingScreen);
 bool isScreenEnabled(CGDirectDisplayID screenId);
 bool unsetMirrors(ScreenConfig* screenConfigs, int argc, CGDirectDisplayID screenList[], CGDisplayCount screenCount);
