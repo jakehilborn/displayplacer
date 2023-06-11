@@ -31,7 +31,7 @@ Disable a screen: `displayplacer "id:<screenId> enabled:false"`
     - Arrange screens as desired and/or enable mirroring. To enable partial mirroring hold the alt/option key and drag a display on top of another.
 2. Use `displayplacer list` to print your current layout's args, so you can create profiles for scripting/hotkeys with [Automator](https://github.com/jakehilborn/displayplacer/issues/13), BetterTouchTool, etc.
 
-#### ScreenIds Switching
+#### ScreenIds Switching:
 Unfortunately, macOS sometimes changes the persistent screenIds when there are race conditions from external screens waking up in non-determinisic order. If none of the screenId options below work for your setup, please search around in the GitHub Issues for conversation regarding this. Many people have written shell scripts to work around this issue.
 
 You can mix and match screenId types across your setup.
@@ -48,6 +48,9 @@ You can mix and match screenId types across your setup.
 - The first screenId in a mirroring set will be the 'Optimize for' screen in the system prefs. You can only choose resolutions for the 'Optimize for' screen. If there is a mirroring resolution you need but cannot find, try making a different screenId the first of the set.
 - hz and color_depth are optional. If left out, the highest hz and then the highest color_depth will be auto applied.
 - screenId is optional if there is only one screen. Rule of thumb is that displayplacer is expecting the entire profile config per screen though, so this may be buggy.
+
+#### Backward Compatability:
+`displayplacer list` output changed slightly in v1.4.0. If this broke your scripts, use `displayplacer list --v1.3.0`.
 
 #### Feedback:
 Please create a GitHub Issue for any feedback, feature requests, bugs, Homebrew issues, etc. Happy to accept pull requests too!
