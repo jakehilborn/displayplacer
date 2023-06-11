@@ -115,7 +115,26 @@ def intel():
     #      None)
     # reset_conf_intel()
 
+
 def apple():
+    reset_conf_apple()
+
+    print('Test missing resolution for persistent, contextual, and serial screen ids')
+    test('test_missing_resolution_persistent_screen_id',
+         '"id:37D8832A-2D66-02CA-B9F7-8F30A301B230 res:2000x1000 scaling:on origin:(0,0) degree:0"',
+         None,
+         1,
+         'Screen ID 37D8832A-2D66-02CA-B9F7-8F30A301B230: could not find res:2000x1000 scaling:on')
+    test('test_missing_resolution_contextual_screen_id',
+         '"id:1 res:2000x1000 scaling:on origin:(0,0) degree:0"',
+         None,
+         1,
+         'Screen ID 1: could not find res:2000x1000 scaling:on')
+    test('test_missing_resolution_serial_screen_id',
+         '"id:s4251086178 res:2000x1000 scaling:on origin:(0,0) degree:0"',
+         None,
+         1,
+         'Screen ID s4251086178: could not find res:2000x1000 scaling:on')
     reset_conf_apple()
 
     print('Test profile that did not work in version 1.2')
