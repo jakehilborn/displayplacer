@@ -25,7 +25,7 @@ void CGSConfigureDisplayMode(CGDisplayConfigRef config, CGDirectDisplayID displa
 CGError CGSConfigureDisplayEnabled(CGDisplayConfigRef config, CGDirectDisplayID display, bool enabled);
 
 //Thanks to Phoenix Dev for CopyAllDisplayModes to fill the modes_D4 structures
-void CopyAllDisplayModes(CGDirectDisplayID display, modes_D4** modes, int* cnt)
+static void CopyAllDisplayModes(CGDirectDisplayID display, modes_D4** modes, int* cnt)
 {
     int nModes;
     CGSGetNumberOfDisplayModes(display, &nModes);
@@ -43,8 +43,8 @@ void CopyAllDisplayModes(CGDirectDisplayID display, modes_D4** modes, int* cnt)
     }
 }
 
-const int UUID_SIZE = 37;
-const int MIRROR_MAX = 127;
+static const int UUID_SIZE = 37;
+static const int MIRROR_MAX = 127;
 
 typedef struct
 {
@@ -90,3 +90,7 @@ bool setPosition(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, char*
 
 //MonitorPanel.m
 bool setRotation(CGDirectDisplayID screenId, char* screenUUID, int degree);
+
+//Old version implementations for backward compatability with programmatic usage of displayplacer
+void v130_listScreens();
+void v130_printCurrentProfile();

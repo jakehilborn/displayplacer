@@ -16,6 +16,12 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
+    if (argc == 3 && strcmp(argv[1], "list") == 0 && strcmp(argv[2], "--v1.3.0") == 0) {
+        v130_listScreens();
+        v130_printCurrentProfile();
+        return 0;
+    }
+
     if (strcmp(argv[1], "list") == 0) {
         listScreens();
         printCurrentProfile();
@@ -258,7 +264,7 @@ void listScreens() {
         printf("Persistent screen id: %s\n", curScreenUUID);
         printf("Contextual screen id: %i\n", curScreen);
         UInt32 serialID = CGDisplaySerialNumber(screenList[i]);
-        printf("Serial screen id: %u\n", serialID);
+        printf("Serial screen id: s%u\n", serialID);
 
         if (CGDisplayIsBuiltin(curScreen)) {
             printf("Type: MacBook built in screen\n");
@@ -356,7 +362,7 @@ void printCurrentProfile() {
         }
     }
 
-    printf("Execute the command below to set your screens to the current arrangement:\n\n");
+    printf("Execute the command below to set your screens to the current arrangement. If screen ids are switching, please run `displayplacer --help` for info on using contextual or serial ids instead of persistent ids.\n\n");
     printf("displayplacer");
     for (int i = 0; i < screenCount; i++) {
         ScreenConfig curScreen = screenConfigs[i];
