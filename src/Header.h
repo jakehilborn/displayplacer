@@ -50,7 +50,6 @@ typedef struct
 {
     char uuid[UUID_SIZE];                    //user input display identifier that stays consistent despite GPU or port changes (persistent screen id)
     char mirrorUUIDs[MIRROR_MAX][UUID_SIZE]; //user input display UUIDs that mirror this display
-    UInt32 serialID;                         //user input display serial ID
     CGDirectDisplayID id;                    //display identifier used for Quartz Display Services (contextual screen id)
     CGDirectDisplayID mirrors[MIRROR_MAX];   //display IDs that mirror this display used for Quartz Display Services
     int mirrorCount;                         //number of displays that mirror this display
