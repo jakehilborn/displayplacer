@@ -426,7 +426,7 @@ void printCurrentProfile() {
 }
 
 CGDirectDisplayID convertUUIDtoID(char* uuid) {
-    if (strstr(uuid, "s") != NULL) { //serial screen id starts with "s", for example "s123456789"
+    if (strstr(uuid, "s") != NULL) { //serial screen id starts with "s", for example "s4123456789"
         return convertSerialToID(uuid);
     }
 
@@ -441,7 +441,7 @@ CGDirectDisplayID convertUUIDtoID(char* uuid) {
 }
 
 CGDirectDisplayID convertSerialToID(char* serialIdString) {
-    int serialId = atoi(serialIdString + 1); //"s123456789" -> 123456789
+    UInt32 serialId = atoi(serialIdString + 1); //"s4123456789" -> 4123456789
 
     CGDisplayCount screenCount;
     CGGetOnlineDisplayList(INT_MAX, NULL, &screenCount); //get number of online screens and store in screenCount
