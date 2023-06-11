@@ -44,6 +44,24 @@ def intel():
          'Unable to find screen B46D2F5E-487B-CC69-C588-ECFD519016E5 - skipping changes for that screen')
     reset_conf_intel()
 
+    print('Test missing resolution for persistent, contextual, and serial screen ids')
+    test('test_missing_resolution_persistent_screen_id',
+         '"id:34686E82-0CED-DF86-AFC7-AA1A8EB5CFC0 res:1440x2561 hz:59 color_depth:4 enabled:true scaling:off origin:(3840,-238) degree:90"',
+         None,
+         1,
+         'Screen ID 34686E82-0CED-DF86-AFC7-AA1A8EB5CFC0: could not find res:1440x2561 hz:59 color_depth:4 scaling:off')
+    test('test_missing_resolution_contextual_screen_id',
+         '"id:722521364 res:1440x2561 hz:59 color_depth:4 enabled:true scaling:off origin:(3840,-238) degree:90"',
+         None,
+         1,
+         'Screen ID 722521364: could not find res:1440x2561 hz:59 color_depth:4 scaling:off')
+    test('test_missing_resolution_serial_screen_id',
+         '"id:s1161315916 res:1440x2561 hz:59 color_depth:4 enabled:true scaling:off origin:(3840,-238) degree:90"',
+         None,
+         1,
+         'Screen ID s1161315916: could not find res:1440x2561 hz:59 color_depth:4 scaling:off')
+    reset_conf_intel()
+
     print('Test missing screen with quiet mode')
     test('test_missing_screen_quiet_mode_suppresses_error',
          '"id:B46D2F5E-487B-CC69-C588-ECFD519016E5 res:3200x1800 hz:60 color_depth:8 enabled:true scaling:on origin:(0,0) degree:0 quiet:true" "id:F466F621-B5FA-04A0-0800-CFA6C258DECD res:1440x900 color_depth:4 enabled:true scaling:on origin:(-1440,1469) degree:0" "id:34686E82-0CED-DF86-AFC7-AA1A8EB5CFC0 res:1080x1920 hz:60 color_depth:8 enabled:true scaling:off origin:(3840,-1109) degree:90" "id:EA487A4B-D9B9-DDDD-91F8-F43E599B7E84 res:1600x1000 color_depth:8 enabled:true scaling:off origin:(425,-1000) degree:0"',
@@ -65,20 +83,6 @@ def intel():
          None)
     reset_conf_intel()
 
-    # TODO this is a known bug, but low priority. The code currently will disable mirroring for all screens before applying config. When the user does not pass in the fully described profile, we disable the mirroring but do not have the context to put the mirroring back. This could be fixed by internally calling `printCurrentProfile()` and using that to fill in the missing context for the current profile.
-    # print('Test id not required if only one mirroring set active')
-    # test('test_set_one_display_active_others_are_disabled_or_mirrored',
-    #      '"id:A46D2F5E-487B-CC69-C588-ECFD519016E5+EA487A4B-D9B9-DDDD-91F8-F43E599B7E84 res:1920x1200 hz:60 color_depth:8 enabled:true scaling:off origin:(0,0) degree:0" "id:F466F621-B5FA-04A0-0800-CFA6C258DECD enabled:false" "id:34686E82-0CED-DF86-AFC7-AA1A8EB5CFC0 enabled:false"',
-    #      'match_input',
-    #      0,
-    #      None)
-    # test('test_set_conf_for_single_screen_without_passing_in_id',
-    #      'res:1920x1080',
-    #      '"id:A46D2F5E-487B-CC69-C588-ECFD519016E5+EA487A4B-D9B9-DDDD-91F8-F43E599B7E84 res:1920x1080 hz:60 color_depth:8 enabled:true scaling:off origin:(0,0) degree:0" "id:F466F621-B5FA-04A0-0800-CFA6C258DECD enabled:false" "id:34686E82-0CED-DF86-AFC7-AA1A8EB5CFC0 enabled:false"',
-    #      0,
-    #      None)
-    # reset_conf_intel()
-
     print('Test disabling and enabling a mirrored screen')
     test('test_set_mirror',
          '"id:A46D2F5E-487B-CC69-C588-ECFD519016E5+F466F621-B5FA-04A0-0800-CFA6C258DECD+EA487A4B-D9B9-DDDD-91F8-F43E599B7E84 res:1440x900 hz:60 color_depth:8 enabled:true scaling:on origin:(0,0) degree:0" "id:34686E82-0CED-DF86-AFC7-AA1A8EB5CFC0 res:1440x2560 hz:59 color_depth:8 enabled:true scaling:off origin:(1440,-238) degree:90"',
@@ -97,6 +101,19 @@ def intel():
          expected_error=None)
     reset_conf_intel(expected_code=None)  # The screen rotations do work, but they time out. This is good enough so we ignore the error code.
 
+    # TODO this is a known bug, but low priority. The code currently will disable mirroring for all screens before applying config. When the user does not pass in the fully described profile, we disable the mirroring but do not have the context to put the mirroring back. This could be fixed by internally calling `printCurrentProfile()` and using that to fill in the missing context for the current profile.
+    # print('Test id not required if only one mirroring set active')
+    # test('test_set_one_display_active_others_are_disabled_or_mirrored',
+    #      '"id:A46D2F5E-487B-CC69-C588-ECFD519016E5+EA487A4B-D9B9-DDDD-91F8-F43E599B7E84 res:1920x1200 hz:60 color_depth:8 enabled:true scaling:off origin:(0,0) degree:0" "id:F466F621-B5FA-04A0-0800-CFA6C258DECD enabled:false" "id:34686E82-0CED-DF86-AFC7-AA1A8EB5CFC0 enabled:false"',
+    #      'match_input',
+    #      0,
+    #      None)
+    # test('test_set_conf_for_single_screen_without_passing_in_id',
+    #      'res:1920x1080',
+    #      '"id:A46D2F5E-487B-CC69-C588-ECFD519016E5+EA487A4B-D9B9-DDDD-91F8-F43E599B7E84 res:1920x1080 hz:60 color_depth:8 enabled:true scaling:off origin:(0,0) degree:0" "id:F466F621-B5FA-04A0-0800-CFA6C258DECD enabled:false" "id:34686E82-0CED-DF86-AFC7-AA1A8EB5CFC0 enabled:false"',
+    #      0,
+    #      None)
+    # reset_conf_intel()
 
 def apple():
     reset_conf_apple()
@@ -180,3 +197,9 @@ def displayplacer(args):
 
 if __name__ == '__main__':
     main()
+
+'''
+When inputting UUID, errors are in UUID.
+When inputting contextual, errors are in contextual.
+When inputting serial, errors are in serial.
+'''
