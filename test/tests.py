@@ -197,9 +197,3 @@ def displayplacer(args):
 
 if __name__ == '__main__':
     main()
-
-'''
-When inputting UUID, errors are in UUID.
-When inputting contextual, errors are in contextual.
-When inputting serial, errors are in serial.
-'''
