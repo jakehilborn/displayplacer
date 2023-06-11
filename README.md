@@ -31,6 +31,14 @@ Disable a screen: `displayplacer "id:<screenId> enabled:false"`
     - Arrange screens as desired and/or enable mirroring. To enable partial mirroring hold the alt/option key and drag a display on top of another.
 2. Use `displayplacer list` to print your current layout's args, so you can create profiles for scripting/hotkeys with [Automator](https://github.com/jakehilborn/displayplacer/issues/13), BetterTouchTool, etc.
 
+#### ScreenIds switching
+Unfortunately, macOS sometimes changes the persistent screenIds when there are race conditions from external screens waking up in non-determinisic order. If none of the screenId options below work for your setup, please search around in the GitHub Issues for conversation regarding this. Many people have written shell scripts to work around this issue.
+
+You can mix and match screenId types across your setup.
+- Persistent screenIds usually stay the same. They are recommended for most use cases.
+- Contextual screenIds change when switching GPUs or when cables switch ports. If you notice persistent screenIds switching around, try using the contextual screenIds.
+- Serial screenIds are tied to your display hardware. If the serial screenIds are unique for all of your monitors, use these.
+
 #### Notes:
 - *`displayplacer list` and system prefs only show resolutions for the screen's current rotation.
 - Use an extra resolution shown in `displayplacer list` by executing `displayplacer "id:<screenId> mode:<modeNum>"`. Some of the resolutions listed do not work. If you select one, displayplacer will default to another working resolution.
@@ -40,7 +48,6 @@ Disable a screen: `displayplacer "id:<screenId> enabled:false"`
 - The first screenId in a mirroring set will be the 'Optimize for' screen in the system prefs. You can only choose resolutions for the 'Optimize for' screen. If there is a mirroring resolution you need but cannot find, try making a different screenId the first of the set.
 - hz and color_depth are optional. If left out, the highest hz and then the highest color_depth will be auto applied.
 - screenId is optional if there is only one screen. Rule of thumb is that displayplacer is expecting the entire profile config per screen though, so this may be buggy.
-- Persistent screenIds usually stay the same. Contextual screenIds change when switching GPUs or when cables switch ports. It's recommended to use persistent screenIds. In some cases, you may need to use contextual screenIds since the modes list changes when macOS switches GPUs. Unfortunately, macOS also changes the persistent screenIds when there are race conditions from external screens waking up in non-determinisic order. Please search around in the GitHub Issues for conversation regarding this. Many people have written shell scripts to work around this issue.
 
 #### Feedback:
 Please create a GitHub Issue for any feedback, feature requests, bugs, Homebrew issues, etc. Happy to accept pull requests too!
