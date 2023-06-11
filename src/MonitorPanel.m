@@ -7,7 +7,7 @@ bool setRotation(CGDirectDisplayID screenId, char* screenUUID, int degree) {
     [mpDisplay setOrientation: degree];
 
     // block until non-blocking rotation change completes
-    int waitSeconds = 5;
+    int waitSeconds = 10;
     unsigned long beginTime = time(NULL);
     unsigned long secondsElapsed = 0;
     while (CGDisplayRotation(screenId) != degree ) {
