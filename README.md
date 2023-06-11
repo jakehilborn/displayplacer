@@ -32,7 +32,7 @@ Disable a screen: `displayplacer "id:<screenId> enabled:false"`
 2. Use `displayplacer list` to print your current layout's args, so you can create profiles for scripting/hotkeys with [Automator](https://github.com/jakehilborn/displayplacer/issues/13), BetterTouchTool, etc.
 
 #### ScreenIds Switching:
-Unfortunately, macOS sometimes changes the persistent screenIds when there are race conditions from external screens waking up in non-determinisic order. If none of the screenId options below work for your setup, please search around in the GitHub Issues for conversation regarding this. Many people have written shell scripts to work around this issue.
+Unfortunately, macOS sometimes changes the persistent screenIds when there are race conditions from external screens waking up in non-determinisic order. If none of the screenId options below work for your setup, please search around in the GitHub Issues for conversation regarding this. Many people have written shell scripts to work around this issue. Recommended discussions are [one](https://github.com/jakehilborn/displayplacer/issues/80), [two](https://github.com/jakehilborn/displayplacer/issues/30), [three](https://github.com/jakehilborn/displayplacer/issues/89), [four](https://github.com/jakehilborn/displayplacer/issues/77), [five](https://github.com/jakehilborn/displayplacer/issues/100), [six](https://github.com/jakehilborn/displayplacer/pull/96).
 
 You can mix and match screenId types across your setup.
 - Persistent screenIds usually stay the same. They are recommended for most use cases.
