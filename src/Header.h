@@ -46,7 +46,7 @@ static void CopyAllDisplayModes(CGDirectDisplayID display, modes_D4** modes, int
 static const int UUID_SIZE = 37;
 static const int MIRROR_MAX = 127;
 
-typedef struct
+typedef struct ScreenConfig
 {
     char uuid[UUID_SIZE];                    //user input display identifier that stays consistent despite GPU or port changes (persistent screen id)
     char mirrorUUIDs[MIRROR_MAX][UUID_SIZE]; //user input display UUIDs that mirror this display
@@ -64,9 +64,11 @@ typedef struct
     int modeNum;                             //display mode id
     int degree;                              //rotation degree
     bool quietMissingScreen;                 //prevent printing error logs and exiting non-zero when this screen cannot be found
+    struct ScreenConfig* next;               //allow for a linked list of screens
 } ScreenConfig;
 
 //DisplayPlacer.c
+void parseConfig(ScreenConfig* screenConfig, char* propGroup);
 void printHelp();
 void printVersion();
 void listScreens();
@@ -75,16 +77,16 @@ CGDirectDisplayID convertUUIDtoID(char* uuid);
 CGDirectDisplayID convertSerialToID(char* serialIdString);
 bool validateScreenOnline(CGDirectDisplayID onlineDisplayList[], CGDisplayCount screenCount, CGDirectDisplayID screenId, char* screenUUID, bool quietMissingScreen);
 bool isScreenEnabled(CGDirectDisplayID screenId);
-bool unsetMirrors(ScreenConfig* screenConfigs, int argc, CGDirectDisplayID screenList[], CGDisplayCount screenCount);
+bool unsetMirrors(ScreenConfig* screenConfigs, CGDirectDisplayID screenList[], CGDisplayCount screenCount);
 bool unsetMirror(CGDisplayConfigRef configRef, CGDirectDisplayID mirrorScreenId, char* mirrorScreenUUID);
-bool setEnableds(ScreenConfig* screenConfigs, int argc, CGDirectDisplayID screenList[], CGDisplayCount screenCount);
+bool setEnableds(ScreenConfig* screenConfigs, CGDirectDisplayID screenList[], CGDisplayCount screenCount);
 bool setEnabled(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, char* screenUUID, bool isEnabled);
-bool setRotations(ScreenConfig* screenConfigs, int argc, CGDirectDisplayID screenList[], CGDisplayCount screenCount);
-bool setMirrors(ScreenConfig* screenConfigs, int argc, CGDisplayConfigRef configRef, CGDirectDisplayID screenList[], CGDisplayCount screenCount);
+bool setRotations(ScreenConfig* screenConfigs, CGDirectDisplayID screenList[], CGDisplayCount screenCount);
+bool setMirrors(ScreenConfig* screenConfigs, CGDisplayConfigRef configRef, CGDirectDisplayID screenList[], CGDisplayCount screenCount);
 bool setMirror(CGDisplayConfigRef configRef, CGDirectDisplayID primaryScreenId, char* primaryScreenUUID, CGDirectDisplayID mirrorScreenId, char* mirrorScreenUUID);
-bool setResolutions(ScreenConfig* screenConfigs, int argc, CGDisplayConfigRef configRef, CGDirectDisplayID screenList[], CGDisplayCount screenCount);
+bool setResolutions(ScreenConfig* screenConfigs, CGDisplayConfigRef configRef, CGDirectDisplayID screenList[], CGDisplayCount screenCount);
 bool setResolution(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, char* screenUUID, int width, int height, int hz, int depth, bool scaled, int modeNum);
-bool setPositions(ScreenConfig* screenConfigs, int argc, CGDisplayConfigRef configRef, CGDirectDisplayID screenList[], CGDisplayCount screenCount);
+bool setPositions(ScreenConfig* screenConfigs, CGDisplayConfigRef configRef, CGDirectDisplayID screenList[], CGDisplayCount screenCount);
 bool setPosition(CGDisplayConfigRef configRef, CGDirectDisplayID screenId, char* screenUUID, int x, int y);
 
 //MonitorPanel.m
