@@ -6,7 +6,7 @@ macOS command line utility to configure multi-display resolutions and arrangemen
 
 #### Download:
 
-Install via Homebrew with `brew tap jakehilborn/jakehilborn && brew install displayplacer` or visit the [releases](https://github.com/jakehilborn/displayplacer/releases) tab.
+Install via Homebrew with `brew install jakehilborn/jakehilborn/displayplacer` or visit the [releases](https://github.com/jakehilborn/displayplacer/releases) tab.
 
 #### Usage:
 
